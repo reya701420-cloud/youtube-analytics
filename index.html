@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="YouTube Analytics Pro — a secure creator analytics workspace powered by authorized YouTube data.">
+  <title>YouTube Analytics Pro</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    :root {
+      --bg: #080a0f;
+      --bg-soft: #0c0f16;
+      --surface: #11141c;
+      --surface-2: #171b25;
+      --surface-3: #1d222e;
+      --text: #f4f6fb;
+      --text-soft: #c4cad6;
+      --muted: #8c96a9;
+      --border: rgba(255,255,255,.075);
+      --border-strong: rgba(255,255,255,.13);
+      --accent: #ff4155;
+      --accent-rgb: 255,65,85;
+      --violet: #8b5cf6;
+      --blue: #38bdf8;
+      --green: #2dd4a0;
+      --amber: #f7b955;
+      --danger: #fb7185;
+      --shadow: 0 14px 40px rgba(0,0,0,.22);
+      --sidebar: 258px;
+    }
+
+    [data-theme="light"] {
+      --bg: #f4f6fa;
+      --bg-soft: #eef1f6;
+      --surface: #ffffff;
+      --surface-2: #f8f9fc;
+      --surface-3: #eef1f6;
+      --text: #151923;
+      --text-soft: #3e4655;
+      --muted: #6f7889;
+      --border: rgba(19,27,43,.085);
+      --border-strong: rgba(19,27,43,.15);
+      --shadow: 0 12px 34px rgba(32,42,65,.07);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      transition: background .25s ease, color .25s ease;
+    }
+    body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, a, select { -webkit-tap-highlight-color: transparent; }
+    button { color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; }
+    h1,h2,h3,h4 { font-family: "Plus Jakarta Sans", sans-serif; margin: 0; }
+    ::selection { background: rgba(var(--accent-rgb),.25); }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 20px; }
+    :focus-visible { outline: 2px solid rgba(var(--accent-rgb),.75); outline-offset: 2px; }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: var(--sidebar);
+      z-index: 60;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: transform .28s cubic-bezier(.22,1,.36,1);
+      backdrop-filter: blur(20px);
+    }
+    .brand {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(145deg, var(--accent), #d91f42);
+      box-shadow: 0 8px 24px rgba(var(--accent-rgb),.24);
+      position: relative;
+      overflow: hidden;
+    }
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      width: 28px;
+      height: 70px;
+      background: rgba(255,255,255,.13);
+      transform: rotate(35deg);
+      left: -40px;
+      animation: logoShine 5s ease-in-out infinite;
+    }
+    @keyframes logoShine { 0%,65%{left:-40px} 85%,100%{left:60px} }
+    .brand-name { font-family: "Plus Jakarta Sans"; font-weight: 800; font-size: 15px; letter-spacing: -.35px; line-height: 1.2; }
+    .brand-sub { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 1.35px; margin-top: 3px; }
+    .sidebar-scroll { flex: 1; overflow-y: auto; padding: 18px 12px; }
+    .nav-label { padding: 12px 12px 8px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 1.4px; }
+    .nav-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 12px;
+      margin: 2px 0;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 500;
+      position: relative;
+      transition: .18s ease;
+    }
+    .nav-item svg { width: 18px; height: 18px; stroke-width: 1.8; flex-shrink: 0; }
+    .nav-item:hover { color: var(--text); background: var(--surface-2); }
+    .nav-item.active {
+      color: var(--text);
+      background: rgba(var(--accent-rgb),.105);
+      font-weight: 600;
+    }
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: -12px;
+      width: 3px;
+      height: 22px;
+      border-radius: 0 4px 4px 0;
+      background: var(--accent);
+      box-shadow: 0 0 14px rgba(var(--accent-rgb),.45);
+    }
+    .nav-item.active svg { color: var(--accent); }
+    .nav-ai-badge { margin-left: auto; font-size: 9px; padding: 3px 6px; border-radius: 5px; color: #bda7ff; background: rgba(139,92,246,.13); font-weight: 700; }
+    .sidebar-bottom { padding: 12px; border-top: 1px solid var(--border); }
+    .quota-card { padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; }
+    .quota-line { height: 4px; background: var(--surface-3); border-radius: 5px; overflow: hidden; margin-top: 9px; }
+    .quota-line > span { display: block; height: 100%; border-radius: inherit; background: var(--green); transition: width .5s ease; }
+    .sidebar-profile { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px; border: 0; background: transparent; border-radius: 10px; cursor: pointer; text-align: left; }
+    .sidebar-profile:hover { background: var(--surface-2); }
+    .avatar { width: 34px; height: 34px; border-radius: 10px; object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+
+    .main-shell { margin-left: var(--sidebar); min-height: 100vh; }
+    .topbar {
+      height: 76px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 26px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar-title { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
+    .topbar-subtitle { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .mobile-menu { display: none !important; }
+    .page-content { padding: 24px 26px 42px; max-width: 1720px; margin: 0 auto; }
+    .page-enter { animation: pageIn .42s cubic-bezier(.22,1,.36,1); }
+    @keyframes pageIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 1px 0 rgba(255,255,255,.015);
+    }
+    .card-pad { padding: 20px; }
+    .card-hover { transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+    .card-hover:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .section-title { font-size: 18px; font-weight: 700; letter-spacing: -.45px; }
+    .section-subtitle { color: var(--muted); font-size: 12px; margin-top: 5px; line-height: 1.55; }
+    .card-title { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+    .muted { color: var(--muted); }
+    .text-soft { color: var(--text-soft); }
+    .small { font-size: 12px; }
+    .tiny { font-size: 10px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .truncate-1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .btn {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 8px 13px;
+      color: var(--text-soft);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .18s ease;
+      white-space: nowrap;
+    }
+    .btn svg { width: 16px; height: 16px; }
+    .btn:hover { background: var(--surface-2); border-color: var(--border-strong); color: var(--text); }
+    .btn-primary { background: var(--accent); color: white; border-color: transparent; box-shadow: 0 7px 20px rgba(var(--accent-rgb),.18); }
+    .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, black); color: white; border-color: transparent; transform: translateY(-1px); }
+    .btn-dark { background: var(--surface-2); }
+    .btn-danger { color: var(--danger); background: rgba(251,113,133,.07); border-color: rgba(251,113,133,.15); }
+    .btn-sm { min-height: 32px; padding: 6px 10px; font-size: 11px; border-radius: 8px; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: .18s ease;
+      flex-shrink: 0;
+    }
+    .icon-btn svg { width: 17px; height: 17px; }
+    .icon-btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); }
+    .search-button {
+      height: 38px;
+      width: 220px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+      font-size: 12px;
+    }
+    .search-button kbd { margin-left: auto; border: 1px solid var(--border); background: var(--surface-2); border-radius: 5px; padding: 2px 5px; font-size: 9px; }
+    .search-button svg { width: 15px; }
+
+    .input, .select {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 12px;
+      outline: none;
+      transition: border .18s, box-shadow .18s;
+    }
+    .input:focus, .select:focus { border-color: rgba(var(--accent-rgb),.55); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.08); }
+    .input::placeholder { color: var(--muted); }
+    .select { appearance: none; padding-right: 32px; background-image: linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%); background-position: calc(100% - 16px) 17px,calc(100% - 11px) 17px; background-size: 5px 5px,5px 5px; background-repeat: no-repeat; }
+    .select-wrap { position: relative; }
+    .input-wrap { position: relative; }
+    .input-wrap > svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; color: var(--muted); pointer-events: none; }
+    .input-wrap > .input { padding-left: 37px; }
+    .field-label { display: block; font-size: 11px; font-weight: 600; color: var(--text-soft); margin-bottom: 7px; }
+    .field-help { color: var(--muted); font-size: 10px; line-height: 1.55; margin-top: 6px; }
+    .checkbox { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .35px;
+      background: var(--surface-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .badge svg { width: 11px; height: 11px; }
+    .badge-demo { color: var(--amber); background: rgba(247,185,85,.08); border-color: rgba(247,185,85,.16); }
+    .badge-live { color: var(--green); background: rgba(45,212,160,.08); border-color: rgba(45,212,160,.16); }
+    .badge-info { color: var(--blue); background: rgba(56,189,248,.08); border-color: rgba(56,189,248,.15); }
+    .badge-violet { color: #b9a1ff; background: rgba(139,92,246,.1); border-color: rgba(139,92,246,.16); }
+    [data-theme="light"] .badge-violet { color: #6d45d9; }
+    .trend { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 3px 6px; }
+    .trend svg { width: 11px; height: 11px; }
+    .trend-up { color: var(--green); background: rgba(45,212,160,.08); }
+    .trend-down { color: var(--danger); background: rgba(251,113,133,.08); }
+    .trend-neutral { color: var(--muted); background: var(--surface-2); }
+
+    .connection-notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 15px;
+      margin-bottom: 20px;
+      border-radius: 13px;
+      border: 1px solid rgba(56,189,248,.16);
+      background: rgba(56,189,248,.055);
+      color: var(--text-soft);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .connection-notice.demo { border-color: rgba(247,185,85,.18); background: rgba(247,185,85,.055); }
+    .connection-notice > svg { width: 18px; flex-shrink: 0; color: var(--blue); }
+    .connection-notice.demo > svg { color: var(--amber); }
+    .connection-notice .notice-actions { margin-left: auto; display: flex; gap: 7px; flex-shrink: 0; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 14px; }
+    .metric-card { padding: 17px; min-height: 145px; position: relative; overflow: hidden; }
+    .metric-card::after { content: ""; position: absolute; inset: auto -30px -50px auto; width: 100px; height: 100px; border-radius: 50%; background: var(--metric-color,var(--accent)); opacity: .035; filter: blur(3px); }
+    .metric-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--metric-color,var(--accent)); background: color-mix(in srgb, var(--metric-color,var(--accent)) 10%, transparent); }
+    .metric-icon svg { width: 17px; height: 17px; }
+    .metric-value { font-family: "Plus Jakarta Sans"; font-size: 25px; font-weight: 700; letter-spacing: -.8px; margin-top: 15px; line-height: 1.1; }
+    .metric-label { color: var(--muted); font-size: 11px; margin-top: 7px; }
+    .metric-foot { margin-top: 11px; display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 9px; }
+    .period-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+    .period-card { padding: 16px 17px; display: flex; align-items: center; gap: 12px; min-height: 96px; }
+    .period-value { font-family: "Plus Jakarta Sans"; font-size: 20px; font-weight: 700; letter-spacing: -.5px; margin-top: 5px; }
+    .sparkline { width: 92px; height: 36px; margin-left: auto; overflow: visible; }
+    .sparkline polyline { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 300; animation: drawLine 1.1s ease both; }
+    @keyframes drawLine { from{stroke-dashoffset:300} to{stroke-dashoffset:0} }
+
+    .dashboard-main-grid { display: grid; grid-template-columns: minmax(0,1.85fr) minmax(280px,.75fr); gap: 16px; }
+    .dashboard-bottom-grid { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(300px,.65fr); gap: 16px; }
+    .two-col { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+    .three-col { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+    .four-col { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; }
+    .chart-wrap { position: relative; height: 300px; width: 100%; }
+    .chart-wrap.sm { height: 240px; }
+    .chart-wrap.xs { height: 190px; }
+    .chart-wrap canvas { max-width: 100%; }
+    .segmented { display: inline-flex; align-items: center; gap: 3px; padding: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+    .segmented button { border: 0; background: transparent; color: var(--muted); border-radius: 7px; padding: 6px 10px; font-size: 10px; font-weight: 600; cursor: pointer; }
+    .segmented button:hover { color: var(--text); }
+    .segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+
+    .realtime-status { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--border); }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); position: relative; }
+    .pulse-dot::after { content: ""; position: absolute; inset: -4px; border: 1px solid var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%{transform:scale(.6);opacity:.8} 80%,100%{transform:scale(1.5);opacity:0} }
+    .unavailable-box { padding: 14px; border: 1px dashed var(--border-strong); border-radius: 11px; background: var(--surface-2); }
+    .unavailable-box svg { color: var(--muted); width: 18px; }
+
+    .video-list-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .video-list-item:last-child { border-bottom: 0; }
+    .thumb { width: 112px; aspect-ratio: 16/9; border-radius: 9px; object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
+    .thumb-sm { width: 82px; }
+    .thumb-xs { width: 58px; border-radius: 7px; }
+    .video-title-button { border: 0; padding: 0; background: transparent; text-align: left; cursor: pointer; color: var(--text); font-weight: 600; font-size: 12px; line-height: 1.45; }
+    .video-title-button:hover { color: var(--accent); }
+
+    .table-wrap { overflow-x: auto; border-radius: 13px; border: 1px solid var(--border); }
+    .data-table { width: 100%; border-collapse: collapse; min-width: 1080px; background: var(--surface); }
+    .data-table th { text-align: left; padding: 12px 13px; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 9px; font-weight: 700; letter-spacing: .55px; text-transform: uppercase; white-space: nowrap; }
+    .data-table td { padding: 12px 13px; border-bottom: 1px solid var(--border); color: var(--text-soft); font-size: 11px; vertical-align: middle; white-space: nowrap; }
+    .data-table tbody tr { transition: background .15s; }
+    .data-table tbody tr:hover { background: var(--surface-2); }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+    .data-table .num { color: var(--text); font-weight: 600; }
+    .table-video { display: flex; align-items: center; gap: 11px; min-width: 280px; max-width: 340px; white-space: normal; }
+    .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px 0; color: var(--muted); font-size: 11px; }
+    .pagination { display: flex; gap: 5px; }
+
+    .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 14px; margin-bottom: 14px; }
+    .toolbar .input-wrap { min-width: 220px; flex: 1; }
+    .toolbar .select { width: auto; min-width: 140px; }
+
+    .channel-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+    .channel-card { padding: 20px; }
+    .channel-head { display: flex; align-items: center; gap: 14px; }
+    .channel-avatar { width: 62px; height: 62px; border-radius: 17px; object-fit: cover; background: var(--surface-3); }
+    .channel-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; padding: 15px 0; margin: 17px 0 12px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .channel-stat-value { font-family: "Plus Jakarta Sans"; font-size: 16px; font-weight: 700; }
+    .channel-stat-label { color: var(--muted); font-size: 9px; margin-top: 4px; }
+
+    .hero-video { position: relative; min-height: 310px; border-radius: 18px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); }
+    .hero-video > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .48; }
+    .hero-video::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg,rgba(6,8,13,.97) 0%,rgba(6,8,13,.75) 48%,rgba(6,8,13,.18) 100%); }
+    [data-theme="light"] .hero-video::after { background: linear-gradient(90deg,rgba(12,15,23,.96) 0%,rgba(12,15,23,.78) 52%,rgba(12,15,23,.18) 100%); }
+    .hero-video-content { position: relative; z-index: 2; padding: 30px; max-width: 650px; color: #f7f8fb; }
+    .hero-video-title { font-size: 26px; line-height: 1.25; letter-spacing: -.7px; margin: 15px 0 10px; }
+    .hero-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 24px; }
+    .hero-stat strong { display: block; font-family: "Plus Jakarta Sans"; font-size: 19px; }
+    .hero-stat span { color: #aeb6c5; font-size: 10px; }
+    .winner-card { padding: 15px; display: flex; align-items: center; gap: 12px; }
+    .winner-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(var(--accent-rgb),.09); color: var(--accent); flex-shrink: 0; }
+    .winner-icon svg { width: 16px; }
+    .rank-row { display: grid; grid-template-columns: 38px minmax(230px,1.4fr) minmax(100px,.7fr) 100px; align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+    .rank-row:last-child { border-bottom: 0; }
+    .rank-number { font-family: "Plus Jakarta Sans"; color: var(--muted); font-size: 14px; font-weight: 700; text-align: center; }
+    .rank-number.top { color: var(--amber); }
+    .rank-progress { height: 5px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+    .rank-progress span { display: block; height: 100%; background: linear-gradient(90deg,var(--accent),#ff7b89); border-radius: inherit; animation: growBar .7s ease both; transform-origin: left; }
+    @keyframes growBar { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+
+    .shorts-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 14px; }
+    .short-card { overflow: hidden; }
+    .short-thumb-wrap { aspect-ratio: 9/13; overflow: hidden; position: relative; background: var(--surface-3); }
+    .short-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+    .short-card:hover img { transform: scale(1.035); }
+    .short-duration { position: absolute; right: 8px; bottom: 8px; padding: 3px 6px; border-radius: 5px; background: rgba(0,0,0,.75); color: white; font-size: 9px; }
+    .short-body { padding: 13px; }
+
+    .growth-compare { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .compare-stat { padding: 15px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+    .compare-stat strong { font-family: "Plus Jakarta Sans"; font-size: 20px; display: block; margin: 8px 0; }
+
+    .country-row { display: grid; grid-template-columns: 28px minmax(100px,1fr) 2fr 70px; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .country-row:last-child { border: 0; }
+    .country-code { width: 27px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: var(--surface-2); color: var(--muted); font-size: 8px; font-weight: 700; }
+    .heatmap { display: grid; grid-template-columns: 52px repeat(24,minmax(8px,1fr)); gap: 3px; min-width: 690px; }
+    .heat-cell { aspect-ratio: 1.25; border-radius: 3px; background: rgba(var(--accent-rgb),var(--heat,.05)); min-height: 11px; }
+    .heat-label { color: var(--muted); font-size: 8px; display: flex; align-items: center; }
+
+    .compare-chip { display: inline-flex; align-items: center; gap: 7px; max-width: 240px; padding: 7px 9px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border); font-size: 10px; }
+    .compare-chip button { border: 0; background: transparent; padding: 0; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+    .compare-chip svg { width: 13px; height: 13px; }
+    .best-cell { color: var(--green) !important; background: rgba(45,212,160,.055); }
+
+    .ai-hero { position: relative; overflow: hidden; padding: 25px; background: radial-gradient(circle at 90% 15%,rgba(139,92,246,.16),transparent 35%),var(--surface); }
+    .ai-symbol { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; color: #c4b5fd; background: rgba(139,92,246,.13); border: 1px solid rgba(139,92,246,.18); }
+    .ai-symbol svg { width: 23px; }
+    .insight-card { padding: 18px; position: relative; overflow: hidden; }
+    .insight-card::before { content: ""; position: absolute; left: 0; top: 18px; bottom: 18px; width: 2px; background: var(--insight-color,var(--violet)); border-radius: 2px; }
+    .insight-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; color: var(--insight-color,var(--violet)); background: color-mix(in srgb,var(--insight-color,var(--violet)) 10%,transparent); }
+    .insight-icon svg { width: 16px; }
+    .chat-box { max-height: 330px; overflow-y: auto; padding: 4px; }
+    .chat-message { display: flex; gap: 10px; margin: 13px 0; }
+    .chat-message.user { flex-direction: row-reverse; }
+    .chat-bubble { max-width: 85%; padding: 11px 13px; border-radius: 12px; background: var(--surface-2); color: var(--text-soft); font-size: 11px; line-height: 1.65; white-space: pre-wrap; }
+    .chat-message.user .chat-bubble { background: rgba(var(--accent-rgb),.1); color: var(--text); }
+
+    .report-summary { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; }
+    .report-stat { padding: 16px; }
+    .report-stat strong { display: block; font-family: "Plus Jakarta Sans"; font-size: 20px; margin-top: 8px; }
+
+    .settings-layout { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(280px,.6fr); gap: 16px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 0; border-bottom: 1px solid var(--border); }
+    .setting-row:last-child { border-bottom: 0; }
+    .accent-dot { width: 28px; height: 28px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; position: relative; }
+    .accent-dot.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface); }
+    .security-item { display: flex; gap: 11px; padding: 12px 0; }
+    .security-item > svg { width: 17px; color: var(--green); flex-shrink: 0; margin-top: 1px; }
+
+    .empty-state { min-height: 420px; display: grid; place-items: center; text-align: center; padding: 40px 20px; }
+    .empty-icon { width: 64px; height: 64px; margin: 0 auto 18px; border-radius: 20px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+    .empty-icon svg { width: 27px; height: 27px; }
+    .empty-state h2 { font-size: 20px; }
+    .empty-state p { color: var(--muted); max-width: 480px; line-height: 1.7; font-size: 12px; margin: 10px auto 20px; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(3,5,9,.72); backdrop-filter: blur(8px); animation: fadeIn .18s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal-panel { width: min(560px,100%); max-height: min(88vh,900px); overflow-y: auto; border-radius: 18px; border: 1px solid var(--border-strong); background: var(--surface); box-shadow: 0 30px 100px rgba(0,0,0,.45); animation: modalIn .25s cubic-bezier(.22,1,.36,1); }
+    .modal-panel.wide { width: min(900px,100%); }
+    .modal-panel.search-modal { width: min(650px,100%); align-self: start; margin-top: 7vh; }
+    @keyframes modalIn { from{opacity:0;transform:translateY(12px) scale(.985)} to{opacity:1;transform:none} }
+    .modal-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .modal-body { padding: 20px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 9px; padding: 15px 20px; border-top: 1px solid var(--border); }
+    .search-result { width: 100%; display: flex; align-items: center; gap: 11px; padding: 10px; border: 0; border-radius: 10px; background: transparent; text-align: left; cursor: pointer; }
+    .search-result:hover { background: var(--surface-2); }
+    .search-result > svg { width: 17px; color: var(--muted); }
+
+    .toast-container { position: fixed; z-index: 150; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 9px; pointer-events: none; }
+    .toast { width: min(360px,calc(100vw - 40px)); display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow); animation: toastIn .25s ease; pointer-events: auto; }
+    .toast svg { width: 17px; flex-shrink: 0; color: var(--green); }
+    .toast.error svg { color: var(--danger); }
+    .toast.info svg { color: var(--blue); }
+    @keyframes toastIn { from{opacity:0;transform:translateX(15px)} to{opacity:1;transform:none} }
+    .sync-spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-bar { position: fixed; z-index: 200; left: 0; top: 0; height: 2px; width: 0; background: var(--accent); opacity: 0; transition: width .3s,opacity .3s; box-shadow: 0 0 12px var(--accent); }
+    .loading-bar.active { width: 75%; opacity: 1; }
+    .loading-bar.done { width: 100%; opacity: 0; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.55); backdrop-filter: blur(3px); }
+
+    @media (max-width: 1400px) {
+      .metric-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .shorts-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+      .search-button { width: 180px; }
+    }
+    @media (max-width: 1150px) {
+      .dashboard-main-grid, .dashboard-bottom-grid, .settings-layout { grid-template-columns: 1fr; }
+      .three-col { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .four-col { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .report-summary { grid-template-columns: repeat(3,1fr); }
+      .shorts-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    }
+    @media (max-width: 1024px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .main-shell { margin-left: 0; }
+      .mobile-menu { display: inline-grid !important; }
+      .topbar { padding: 0 18px; }
+      .page-content { padding: 20px 18px 36px; }
+      .channel-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .topbar { height: 66px; gap: 10px; padding: 0 13px; }
+      .topbar-subtitle, .search-button, .topbar-channel, .topbar-range, .topbar-avatar { display: none !important; }
+      .topbar-title { font-size: 14px; }
+      .page-content { padding: 16px 13px 30px; }
+      .metric-grid, .period-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+      .metric-card { min-height: 137px; padding: 14px; }
+      .metric-value { font-size: 21px; }
+      .period-card { padding: 13px; }
+      .sparkline { display: none; }
+      .two-col, .three-col, .four-col { grid-template-columns: 1fr; }
+      .section-head { flex-direction: column; align-items: stretch; }
+      .section-head > div:last-child:not(:first-child) { width: 100%; }
+      .connection-notice { align-items: flex-start; flex-wrap: wrap; }
+      .connection-notice .notice-actions { margin-left: 28px; }
+      .hero-video-content { padding: 22px; }
+      .hero-video-title { font-size: 21px; }
+      .rank-row { grid-template-columns: 30px minmax(180px,1fr) 70px; }
+      .rank-row .rank-progress { display: none; }
+      .shorts-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+      .growth-compare { grid-template-columns: 1fr; }
+      .report-summary { grid-template-columns: repeat(2,1fr); }
+      .toolbar { align-items: stretch; }
+      .toolbar .input-wrap, .toolbar .select { width: 100%; min-width: 100%; }
+      .modal-backdrop { padding: 10px; }
+      .modal-body { padding: 16px; }
+      .country-row { grid-template-columns: 28px minmax(90px,1fr) 1fr 55px; }
+      .setting-row { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 420px) {
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .metric-label { font-size: 10px; }
+      .metric-foot { flex-wrap: wrap; }
+      .period-value { font-size: 17px; }
+      .card-pad { padding: 16px; }
+      .topbar-actions { gap: 5px; }
+      .topbar-actions .btn span { display: none; }
+      .topbar-actions .btn { width: 38px; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loadingBar" class="loading-bar"></div>
+
+  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+    <div class="brand">
+      <div class="brand-mark"><i data-lucide="play" style="width:18px;fill:currentColor"></i></div>
+      <div>
+        <div class="brand-name">YouTube Analytics</div>
+        <div class="brand-sub">PRO WORKSPACE</div>
+      </div>
+    </div>
+    <div class="sidebar-scroll">
+      <div class="nav-label">WORKSPACE</div>
+      <nav id="sideNav"></nav>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="quota-card">
+        <div class="flex items-center justify-between gap-2">
+          <span class="tiny muted font-semibold">DATA API ACTIVITY</span>
+          <i data-lucide="gauge" style="width:13px;color:var(--muted)"></i>
+        </div>
+        <div class="small font-semibold mt-2" id="quotaText">0 estimated units</div>
+        <div class="quota-line"><span id="quotaBar" style="width:0%"></span></div>
+        <div class="tiny muted mt-2">Session estimate · not a billing meter</div>
+      </div>
+      <button class="sidebar-profile" data-page="settings" id="sidebarProfile"></button>
+    </div>
+  </aside>
+  <div id="sidebarOverlay" class="sidebar-overlay" data-action="close-sidebar"></div>
+
+  <div class="main-shell">
+    <header class="topbar">
+      <button class="icon-btn mobile-menu" data-action="toggle-sidebar" aria-label="Open navigation"><i data-lucide="menu"></i></button>
+      <div>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-subtitle" id="topbarSubtitle">Your channel at a glance</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="search-button" data-action="open-search" aria-label="Search workspace">
+          <i data-lucide="search"></i><span>Search workspace</span><kbd>⌘ K</kbd>
+        </button>
+        <div class="topbar-channel">
+          <select id="channelSwitcher" class="select" style="width:185px;min-height:38px" aria-label="Active channel"></select>
+        </div>
+        <div class="topbar-range">
+          <select id="globalRange" class="select" style="width:112px;min-height:38px" aria-label="Analytics range">
+            <option value="7">Last 7 days</option>
+            <option value="28">Last 28 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 365 days</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" data-action="sync" id="syncButton"><i data-lucide="refresh-cw"></i><span>Sync data</span></button>
+        <button class="icon-btn" data-action="notifications" aria-label="Notifications"><i data-lucide="bell"></i></button>
+        <button class="icon-btn" data-action="toggle-theme" aria-label="Toggle color theme"><i data-lucide="sun" id="themeIcon"></i></button>
+        <img id="topbarAvatar" class="avatar topbar-avatar" alt="Channel profile">
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div id="connectionNotice"></div>
+      <div id="pageContent"></div>
+    </main>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <script>
+    /* ---------- Utilities ---------- */
+    const $ = (s, root = document) => root.querySelector(s);
+    const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+    const DAY = 86400000;
+    const esc = value => String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+    const num = value => value === null || value === undefined || value === "" || Number.isNaN(Number(value)) ? null : Number(value);
+    const compact = value => value === null || value === undefined || Number.isNaN(Number(value)) ? "—" : new Intl.NumberFormat("en", {notation:"compact", maximumFractionDigits:1}).format(Number(value));
+    const full = value => value === null || value === undefined ? "—" : new Intl.NumberFormat("en-US").format(Number(value));
+    const money = value => value === null || value === undefined ? "—" : "$" + compact(value);
+    const pct = value => value === null || value === undefined ? "—" : `${Number(value).toFixed(1)}%`;
+    const hours = value => value === null || value === undefined ? "—" : `${compact(value)} h`;
+    const duration = seconds => {
+      if (seconds === null || seconds === undefined) return "—";
+      const s = Math.max(0, Math.round(Number(seconds)));
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+      return h ? `${h}:${String(m).padStart(2,"0")}:${String(r).padStart(2,"0")}` : `${m}:${String(r).padStart(2,"0")}`;
+    };
+    const dateISO = date => {
+      const d = date instanceof Date ? date : new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    };
+    const dateFmt = (value, options = {month:"short",day:"numeric",year:"numeric"}) => {
+      if (!value) return "—";
+      return new Intl.DateTimeFormat("en-US", options).format(new Date(String(value).length === 10 ? value + "T12:00:00" : value));
+    };
+    const timeAgo = value => {
+      if (!value) return "Never";
+      const seconds = Math.floor((Date.now() - new Date(value).getTime()) / 1000);
+      if (seconds < 60) return "Just now";
+      if (seconds < 3600) return `${Math.floor(seconds/60)}m ago`;
+      if (seconds < 86400) return `${Math.floor(seconds/3600)}h ago`;
+      return `${Math.floor(seconds/86400)}d ago`;
+    };
+    const growth = (current, previous) => previous && current !== null && previous !== null ? ((current - previous) / Math.abs(previous)) * 100 : null;
+    const sum = (rows, key) => rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+    const safeJSON = (value, fallback = null) => { try { return JSON.parse(value); } catch { return fallback; } };
+    const icon = (name, cls = "") => `<i data-lucide="${name}"${cls ? ` class="${cls}"` : ""}></i>`;
+    const modeBadge = () => state.mode === "demo"
+      ? `<span class="badge badge-demo">${icon("flask-conical")} SAMPLE DATA</span>`
+      : `<span class="badge badge-live">${icon("shield-check")} AUTHORIZED DATA</span>`;
+    const formatByType = (value, type) => {
+      if (type === "currency") return money(value);
+      if (type === "hours") return hours(value);
+      if (type === "percent") return pct(value);
+      if (type === "integer") return full(Math.round(value));
+      if (type === "duration") return duration(value);
+      return compact(value);
+    };
+    const countHtml = (value, type = "compact") => value === null || value === undefined
+      ? `<span>—</span>`
+      : `<span data-count="${Number(value)}" data-format="${type}">0</span>`;
+    const trendHtml = (value, label = "") => {
+      if (value === null || value === undefined || !Number.isFinite(value)) return `<span class="trend trend-neutral">${label || "No comparison"}</span>`;
+      const up = value >= 0;
+      return `<span class="trend ${up ? "trend-up" : "trend-down"}">${icon(up ? "trending-up" : "trending-down")}${Math.abs(value).toFixed(1)}%</span>${label ? `<span>${esc(label)}</span>` : ""}`;
+    };
+    const parseISODuration = iso => {
+      const match = String(iso || "").match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      return match ? (Number(match[1] || 0) * 3600) + (Number(match[2] || 0) * 60) + Number(match[3] || 0) : 0;
+    };
+    const mulberry32 = seed => () => {
+      let t = seed += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+    const downloadBlob = (content, name, type = "text/plain") => {
+      const blob = content instanceof Blob ? content : new Blob([content], {type});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    const copyText = async text => {
+      try { await navigator.clipboard.writeText(text); toast("Copied to clipboard"); }
+      catch { toast("Clipboard access is unavailable", "error"); }
+    };
+
+    /* ---------- Application state ---------- */
+    const menu = [
+      {id:"dashboard", label:"Dashboard", icon:"layout-dashboard", sub:"Your channel at a glance"},
+      {id:"channels", label:"My Channels", icon:"radio-tower", sub:"Manage authorized YouTube channels"},
+      {id:"videos", label:"Video Analytics", icon:"video", sub:"Performance for every uploaded video"},
+      {id:"best", label:"Best Performing Videos", icon:"trophy", sub:"Rankings, leaders and viral content"},
+      {id:"shorts", label:"Shorts Analytics", icon:"smartphone", sub:"Short-form performance and rankings"},
+      {id:"growth", label:"Channel Growth", icon:"chart-no-axes-combined", sub:"Views, watch time and subscriber trends"},
+      {id:"audience", label:"Audience Analytics", icon:"users", sub:"Demographics and viewer geography"},
+      {id:"comparison", label:"Video Comparison", icon:"columns-3", sub:"Compare videos across core metrics"},
+      {id:"ai", label:"AI Analysis", icon:"sparkles", sub:"Data-grounded recommendations and reports"},
+      {id:"reports", label:"Reports", icon:"file-chart-column", sub:"Build and export analytics reports"},
+      {id:"settings", label:"Settings", icon:"settings-2", sub:"Connection, privacy and preferences"}
+    ];
+    const defaults = {
+      theme: "dark",
+      range: 28,
+      clientId: "",
+      aiProxy: "",
+      maxVideos: 100,
+      requestMonetary: true,
+      reduceMotion: false,
+      accent: "red"
+    };
+    const storedSettings = safeJSON(localStorage.getItem("yap_settings"), {}) || {};
+    const state = {
+      page: "dashboard",
+      mode: "demo",
+      channels: [],
+      activeChannelId: null,
+      videos: [],
+      analytics: {daily:[], coreAvailable:false, revenueAvailable:false, audience:null},
+      accessToken: null,
+      grantedScopes: "",
+      settings: {...defaults, ...storedSettings},
+      lastSync: null,
+      syncing: false,
+      noticeDismissed: false,
+      dashboardMetric: "views",
+      videoSort: "views",
+      videoFilter: "all",
+      videoSearch: "",
+      videoPage: 1,
+      videoPerPage: 10,
+      bestMetric: "viral",
+      bestCount: 10,
+      compareIds: [],
+      quotaUsed: 0,
+      analyticsQueries: 0,
+      aiInsights: [],
+      aiNarrative: "",
+      aiLoading: false,
+      aiLastRun: null,
+      chat: [],
+      report: {type:"monthly", start:null, end:null},
+      charts: {}
+    };
+    const accents = {
+      red: {hex:"#ff4155", rgb:"255,65,85"},
+      violet: {hex:"#8b5cf6", rgb:"139,92,246"},
+      blue: {hex:"#0ea5e9", rgb:"14,165,233"},
+      green: {hex:"#10b981", rgb:"16,185,129"}
+    };
+
+    function saveSettings() {
+      localStorage.setItem("yap_settings", JSON.stringify(state.settings));
+    }
+    function saveLiveChannels() {
+      if (state.mode !== "live") return;
+      const safe = state.channels.map(({id,name,handle,avatar,subscribers,views,videoCount,publishedAt,uploads,lastSync}) =>
+        ({id,name,handle,avatar,subscribers,views,videoCount,publishedAt,uploads,lastSync}));
+      localStorage.setItem("yap_channels", JSON.stringify(safe));
+      localStorage.setItem("yap_active_channel", state.activeChannelId || "");
+    }
+    function applySettings() {
+      document.documentElement.dataset.theme = state.settings.theme;
+      const accent = accents[state.settings.accent] || accents.red;
+      document.documentElement.style.setProperty("--accent", accent.hex);
+      document.documentElement.style.setProperty("--accent-rgb", accent.rgb);
+      document.body.classList.toggle("reduce-motion", !!state.settings.reduceMotion);
+      $("#globalRange").value = String(state.settings.range);
+    }
+
+    /* ---------- Transparent sample workspace ---------- */
+    function buildDemoWorkspace() {
+      const random = mulberry32(87241);
+      const now = new Date();
+      const daily = [];
+      for (let i = 364; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const progress = (364 - i) / 364;
+        const weekday = date.getDay();
+        const weekend = weekday === 0 || weekday === 6 ? 1.16 : 1;
+        const spike = random() > .965 ? 1.65 : 1;
+        const views = Math.round((31000 + progress * 33000) * weekend * (.82 + random() * .38) * spike);
+        const averageViewMinutes = 3.25 + random() * 1.1;
+        const subscribersGained = Math.round(views * (.0032 + random() * .0024));
+        const subscribersLost = Math.round(subscribersGained * (.12 + random() * .11));
+        daily.push({
+          date: dateISO(date),
+          views,
+          estimatedMinutesWatched: Math.round(views * averageViewMinutes),
+          subscribersGained,
+          subscribersLost,
+          estimatedRevenue: Number((views / 1000 * (1.35 + random() * .9)).toFixed(2))
+        });
+      }
+
+      const defs = [
+        ["I Tested the World's Smallest 4K Camera",2,742,3800000,"camera","photo-1516035069371-29a1b244cc32"],
+        ["My Complete Creator Desk Setup 2025",5,986,920000,"studio","photo-1598550476439-6847785fcea6"],
+        ["How I Edit Videos 3x Faster",9,684,1280000,"editing","photo-1574717024653-61fd2cf4d44d"],
+        ["24 Hours Shooting Only on a Phone",14,1055,760000,"mobile","photo-1523206489230-c012c64b2b48"],
+        ["The Lighting Trick That Changes Everything",21,598,1120000,"lighting","photo-1485846234645-a62644f84728"],
+        ["I Gave Myself 60 Seconds #Shorts",3,42,2150000,"shorts","photo-1492691527719-9d1e07e534b4"],
+        ["Cinematic B-Roll: Beginner to Pro",28,884,1480000,"cinematography","photo-1492724441997-5dc865305da7"],
+        ["Why Your Videos Feel Boring",35,623,890000,"storytelling","photo-1531297484001-80022131f5a1"],
+        ["5 Camera Settings You Should Change",42,512,670000,"camera","photo-1526170375885-4d8ecf77b99f"],
+        ["POV: Your First Studio Tour #Shorts",11,35,1740000,"studio","photo-1558655146-9f40138edfeb"],
+        ["I Tried Every Budget Microphone",50,1104,530000,"audio","photo-1590602847861-f357a9332bbc"],
+        ["The Perfect Thumbnail Formula",63,745,1610000,"growth","photo-1545235617-9465d2a55698"],
+        ["Editing Sound Like a Professional",70,932,410000,"audio","photo-1516280440614-37939bbacd81"],
+        ["One Light, Three Cinematic Looks #Shorts",18,51,1380000,"lighting","photo-1500530855697-b586d89ba3ee"],
+        ["What 100 Uploads Taught Me",84,1205,980000,"growth","photo-1542744094-3a31f272c490"],
+        ["A Realistic Day as a Full-Time Creator",95,1080,620000,"creator","photo-1522202176988-66273c2fd55f"],
+        ["Stop Buying Camera Gear",110,812,1190000,"camera","photo-1452780212940-6f5c0d14d848"],
+        ["This Transition Is Easier Than You Think #Shorts",26,28,1940000,"editing","photo-1550745165-9bc0b252726f"],
+        ["Color Grading in 10 Minutes",125,655,780000,"editing","photo-1487058792275-0ad4aaf24ca7"],
+        ["How I Plan 30 Days of Content",140,903,570000,"planning","photo-1552664730-d307ca884978"],
+        ["My Favorite Free Creator Tools",155,764,860000,"tools","photo-1516321318423-f06f85e504b3"],
+        ["The 3 Second Rule #Shorts",32,24,1240000,"shorts","photo-1517245386807-bb43f82c33c4"],
+        ["Can You Start With Just a Phone?",170,998,1010000,"mobile","photo-1512941937669-90a1b58e7e9c"],
+        ["Behind the Scenes: My Biggest Shoot",190,1320,1450000,"behindthescenes","photo-1505236858219-8359eb29e329"]
+      ];
+      const videos = defs.map((d, i) => {
+        const [title, age, seconds, baseViews, topic, photo] = d;
+        const isShort = seconds <= 60;
+        const views = Math.round(baseViews * (.88 + random() * .25));
+        const retention = isShort ? 72 + random() * 35 : 35 + random() * 29;
+        const avgViewDuration = Math.round(seconds * Math.min(retention,100) / 100);
+        const likes = Math.round(views * (.031 + random() * .035));
+        const comments = Math.round(views * (.0013 + random() * .0026));
+        const subscribersGained = Math.round(views * (.0019 + random() * .004));
+        const publishedAt = new Date(now.getTime() - age * DAY).toISOString();
+        return {
+          id:`sample-${i+1}`, title, publishedAt, duration:seconds, isShort, views, likes, comments,
+          watchHours: Number((views * avgViewDuration / 3600).toFixed(1)),
+          avgViewDuration, retention, subscribersGained,
+          revenue: Number((views / 1000 * (1.1 + random() * 1.5)).toFixed(2)),
+          recentViews: Math.round(views * (age < 28 ? .72 : .04 + random() * .18)),
+          last24h: Math.round((views / Math.max(age,1)) * (.08 + random() * .22)),
+          engagedViews: isShort ? Math.round(views * (.68 + random() * .2)) : null,
+          tags:[topic,"creator","youtube"], topic,
+          thumbnail:`https://images.unsplash.com/${photo}?auto=format&fit=crop&w=900&q=82`,
+          description:`Sample description for ${title}. Connect a channel to replace this workspace with authorized YouTube data.`
+        };
+      });
+      return {
+        channel:{
+          id:"UC_SAMPLE_FRAMECRAFT", name:"Framecraft Studio", handle:"@framecraftstudio",
+          avatar:"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=180&q=85",
+          subscribers:1284000, views:86429140, videoCount:248, uploads:"SAMPLE_UPLOADS",
+          publishedAt:"2018-04-12T10:00:00Z", lastSync:new Date().toISOString()
+        },
+        videos,
+        analytics:{
+          daily, coreAvailable:true, revenueAvailable:true, perVideoAvailable:true, recentAvailable:true,
+          audience:{
+            ages:[
+              {label:"13–17",value:4.2},{label:"18–24",value:29.8},{label:"25–34",value:36.4},
+              {label:"35–44",value:17.1},{label:"45–54",value:7.6},{label:"55+",value:4.9}
+            ],
+            gender:[{label:"Male",value:67.8},{label:"Female",value:30.9},{label:"Other",value:1.3}],
+            countries:[
+              {code:"US",name:"United States",views:4820000},{code:"IN",name:"India",views:3910000},
+              {code:"GB",name:"United Kingdom",views:1760000},{code:"CA",name:"Canada",views:1240000},
+              {code:"AU",name:"Australia",views:980000},{code:"DE",name:"Germany",views:810000},
+              {code:"BR",name:"Brazil",views:720000},{code:"JP",name:"Japan",views:590000}
+            ],
+            cities:[
+              {name:"Los Angeles",country:"US",views:684000},{name:"Mumbai",country:"IN",views:622000},
+              {name:"London",country:"GB",views:518000},{name:"New York",country:"US",views:491000},
+              {name:"Toronto",country:"CA",views:362000},{name:"Delhi",country:"IN",views:341000}
+            ],
+            returning:{returning:58.4,new:41.6},
+            active:Array.from({length:7},(_,day)=>Array.from({length:24},(_,hour)=>{
+              const evening = Math.exp(-Math.pow(hour-19,2)/22);
+              const lunch = Math.exp(-Math.pow(hour-12,2)/15) * .45;
+              return Math.round(12 + (evening+lunch) * (65 + random()*30) * (day===5||day===6?1.12:1));
+            }))
+          }
+        }
+      };
+    }
+    function loadDemo() {
+      const demo = buildDemoWorkspace();
+      state.mode = "demo";
+      state.channels = [demo.channel];
+      state.activeChannelId = demo.channel.id;
+      state.videos = demo.videos;
+      state.analytics = demo.analytics;
+      state.lastSync = demo.channel.lastSync;
+      state.compareIds = [...demo.videos].sort((a,b)=>b.views-a.views).slice(0,3).map(v=>v.id);
+      state.aiInsights = [];
+      state.aiNarrative = "";
+      state.chat = [];
+      state.noticeDismissed = false;
+      state.report = {type:"monthly",start:null,end:null};
+    }
+
+    /* ---------- Derived analytics ---------- */
+    const currentChannel = () => state.channels.find(c => c.id === state.activeChannelId) || state.channels[0] || null;
+    const daily = () => state.analytics.daily || [];
+    const rangeDaily = (days = Number(state.settings.range)) => daily().slice(-days);
+    const sumLast = (days, key) => daily().length ? sum(daily().slice(-days), key) : null;
+    const previousSum = (days, key) => daily().length > days ? sum(daily().slice(-(days*2),-days),key) : null;
+    const videoAge = video => Math.max(1, Math.ceil((Date.now() - new Date(video.publishedAt).getTime()) / DAY));
+    const isShort = video => !!video.isShort || Number(video.duration) <= 60;
+    const metricValue = (video, metric) => {
+      switch(metric) {
+        case "viral": return video.views / videoAge(video);
+        case "trending": return video.recentViews ?? null;
+        case "views": return video.views;
+        case "likes": return video.likes;
+        case "comments": return video.comments;
+        case "retention": return video.retention;
+        case "subscribersGained": return video.subscribersGained;
+        case "watchHours": return video.watchHours;
+        case "low": return video.views;
+        case "last24h": return state.mode === "demo" ? video.last24h : null;
+        default: return video.views;
+      }
+    };
+    function rankVideos(metric = "views", videos = state.videos) {
+      const eligible = videos.filter(v => metric !== "low" || videoAge(v) >= 14);
+      return [...eligible].sort((a,b) => {
+        const av = metricValue(a,metric), bv = metricValue(b,metric);
+        if (av === null && bv === null) return 0;
+        if (av === null) return 1;
+        if (bv === null) return -1;
+        return metric === "low" ? av - bv : bv - av;
+      });
+    }
+    function sparkline(values, color = "var(--accent)") {
+      if (!values || values.length < 2) return "";
+      const data = values.slice(-30), min = Math.min(...data), max = Math.max(...data), spread = max-min || 1;
+      const points = data.map((v,i)=>`${(i/(data.length-1)*116).toFixed(1)},${(33-(v-min)/spread*28).toFixed(1)}`).join(" ");
+      return `<svg class="sparkline" viewBox="0 0 116 36" aria-hidden="true"><polyline points="${points}" style="stroke:${color}"></polyline></svg>`;
+    }
+    function metricCard(label, value, type, iconName, color, foot = "", trend = null) {
+      return `<article class="card card-hover metric-card" style="--metric-color:${color}">
+        <div class="flex items-start justify-between">
+          <div class="metric-icon">${icon(iconName)}</div>
+          ${trend === null ? "" : trendHtml(trend)}
+        </div>
+        <div class="metric-value" title="${value === null ? "Unavailable" : esc(formatByType(value,type))}">${countHtml(value,type)}</div>
+        <div class="metric-label">${esc(label)}</div>
+        <div class="metric-foot">${foot}</div>
+      </article>`;
+    }
+    function unavailable(title, text, iconName = "lock-keyhole") {
+      return `<div class="unavailable-box h-full flex flex-col items-center justify-center text-center min-h-[180px]">
+        ${icon(iconName)}<div class="font-semibold small mt-3">${esc(title)}</div>
+        <p class="tiny muted mt-2 leading-relaxed max-w-[360px]">${esc(text)}</p>
+      </div>`;
+    }
+    function emptyState(title = "Connect your YouTube channel", text = "Authorize your channel with Google OAuth 2.0 to load real channel, video and analytics data. No metrics are invented when an API field is unavailable.") {
+      const needsReconnect = state.mode === "live" && state.channels.length && !state.accessToken;
+      return `<div class="card empty-state">
+        <div><div class="empty-icon">${icon(needsReconnect ? "key-round" : "youtube")}</div>
+        <h2>${needsReconnect ? "Reconnect to load analytics" : esc(title)}</h2>
+        <p>${needsReconnect ? "For security, OAuth access tokens are kept in memory only. Reconnect after a reload or expired session to synchronize your authorized data." : esc(text)}</p>
+        <div class="flex justify-center flex-wrap gap-2">
+          <button class="btn btn-primary" data-action="connect">${icon("link")} ${needsReconnect ? "Reconnect channel" : "Connect with Google"}</button>
+          ${state.mode !== "live" ? "" : `<button class="btn" data-action="load-demo">${icon("flask-conical")} Explore sample workspace</button>`}
+        </div></div>
+      </div>`;
+    }
+    function dataGate(requireVideos = true) {
+      if (!currentChannel()) return emptyState();
+      if (state.mode === "live" && !state.lastSync && !state.videos.length) return emptyState();
+      if (requireVideos && !state.videos.length) return emptyState("No videos loaded", "This channel has no accessible uploads, or the latest synchronization did not return videos.");
+      return null;
+    }
+    function pageHead(title, subtitle, actions = "") {
+      return `<div class="section-head">
+        <div><div class="flex items-center gap-2 flex-wrap"><h1 class="section-title" style="font-size:23px">${esc(title)}</h1>${modeBadge()}</div>
+        <p class="section-subtitle">${esc(subtitle)}</p></div>
+        <div class="flex items-center gap-2 flex-wrap">${actions}</div>
+      </div>`;
+    }
+
+    /* ---------- Dashboard ---------- */
+    function dashboardPage() {
+      const channel = currentChannel();
+      if (!channel) return emptyState();
+      const d = daily();
+      const watch365 = d.length ? sum(d.slice(-365),"estimatedMinutesWatched") / 60 : null;
+      const revenue365 = state.analytics.revenueAvailable && d.length ? sum(d.slice(-365),"estimatedRevenue") : null;
+      const avgViews = channel.views !== null && channel.videoCount ? channel.views / channel.videoCount : null;
+      const netSubs28 = d.length ? sum(d.slice(-28),"subscribersGained") - sum(d.slice(-28),"subscribersLost") : null;
+      const prevNetSubs28 = d.length > 28 ? sum(d.slice(-56,-28),"subscribersGained") - sum(d.slice(-56,-28),"subscribersLost") : null;
+      const top = rankVideos("views").slice(0,5);
+      const recent = rankVideos("trending").slice(0,3);
+      const insights = getLocalInsights().slice(0,3);
+      const latestTwo = d.slice(-2);
+      const periodCards = [7,28,90,365].map(days => {
+        const value = sumLast(days,"views"), previous = previousSum(days,"views");
+        return `<article class="card card-hover period-card">
+          <div class="min-w-0"><div class="tiny muted font-semibold">LAST ${days} DAYS</div>
+          <div class="period-value">${countHtml(value)}</div>
+          <div class="mt-2 flex items-center gap-1 tiny muted">${trendHtml(growth(value,previous))}<span>vs prior</span></div></div>
+          ${sparkline(d.slice(-days).map(x=>x.views), days === 7 ? "#8b5cf6" : days === 28 ? "#38bdf8" : days === 90 ? "#2dd4a0" : "var(--accent)")}
+        </article>`;
+      }).join("");
+
+      return `${pageHead("Channel overview", `${channel.name} · ${state.lastSync ? "Last synchronized " + timeAgo(state.lastSync) : "Authorization required"}`, `
+        <button class="btn" data-page="reports">${icon("file-down")} Export report</button>
+        <button class="btn btn-primary" data-action="sync">${icon("refresh-cw")} Refresh</button>`)}
+        <section class="metric-grid mb-[14px]">
+          ${metricCard("Total subscribers",num(channel.subscribers),"compact","users-round","#ff4155",netSubs28 === null ? "Lifetime channel total" : `${compact(netSubs28)} net in 28 days`,growth(netSubs28,prevNetSubs28))}
+          ${metricCard("Total channel views",num(channel.views),"compact","eye","#8b5cf6","Lifetime · YouTube Data API")}
+          ${metricCard("Total videos",num(channel.videoCount),"integer","square-play","#38bdf8",`${full(state.videos.length)} loaded in workspace`)}
+          ${metricCard("Watch time · 365 days",watch365,"hours","clock-3","#2dd4a0",d.length ? `${d.slice(-365).length} reported days` : "Analytics permission required")}
+          ${metricCard("Estimated revenue · 365 days",revenue365,"currency","circle-dollar-sign","#f7b955",revenue365 === null ? "Monetization scope unavailable" : "Read-only Analytics API")}
+          ${metricCard("Average views per video",avgViews,"compact","chart-spline","#fb7185","Lifetime channel average")}
+        </section>
+        <section class="period-grid mb-[16px]">${periodCards}</section>
+        <section class="dashboard-main-grid mb-[16px]">
+          <article class="card card-pad">
+            <div class="section-head">
+              <div><h2 class="card-title">Performance trend</h2><p class="section-subtitle">Daily authorized analytics · ${state.settings.range}-day view</p></div>
+              <div class="segmented">
+                ${[["views","Views"],["subscribers","Subscribers"],["watchHours","Watch time"]].map(([id,label])=>`<button data-action="dashboard-metric" data-value="${id}" class="${state.dashboardMetric===id?"active":""}">${label}</button>`).join("")}
+              </div>
+            </div>
+            ${d.length ? `<div class="chart-wrap"><canvas id="dashboardChart"></canvas></div>` : unavailable("Daily analytics unavailable","Grant YouTube Analytics read-only access and reconnect. Channel totals remain available from the Data API.","chart-no-axes-column")}
+          </article>
+          <article class="card card-pad">
+            <div class="section-head"><div><h2 class="card-title">Real-time & recent activity</h2><p class="section-subtitle">Only API-supported measurements</p></div><span class="badge badge-info">NO ESTIMATES</span></div>
+            <div class="realtime-status">
+              <span class="pulse-dot"></span><div class="min-w-0"><div class="small font-semibold">${state.mode === "live" ? "Authorized connection active" : "Sample workspace"}</div>
+              <div class="tiny muted mt-1">${state.lastSync ? "Synced " + timeAgo(state.lastSync) : "Reconnect required"}</div></div>
+            </div>
+            <div class="mt-4">
+              <div class="tiny muted font-semibold mb-2">LATEST TWO REPORTED DAYS</div>
+              ${latestTwo.length ? latestTwo.map(row=>`<div class="flex items-center justify-between py-2 border-b border-[var(--border)] last:border-0">
+                <span class="small text-soft">${dateFmt(row.date,{month:"short",day:"numeric"})}</span><strong class="small">${compact(row.views)} views</strong>
+              </div>`).join("") : `<div class="small muted py-3">Daily data unavailable.</div>`}
+              <div class="tiny muted mt-2 leading-relaxed">Approximately the last 48 hours at daily granularity; reporting may lag.</div>
+            </div>
+            <div class="unavailable-box mt-4">
+              <div class="flex items-center gap-2"><i data-lucide="info"></i><span class="small font-semibold">Last 60 minutes: unavailable</span></div>
+              <p class="tiny muted mt-2 leading-relaxed">YouTube's public APIs do not provide minute-level real-time channel views. This workspace does not display estimates.</p>
+            </div>
+            <div class="mt-4"><div class="tiny muted font-semibold mb-2">RECENT MOMENTUM · LAST 28 DAYS</div>
+              ${recent.length && recent[0].recentViews !== null ? recent.map(v=>`<div class="flex items-center gap-2 py-2">
+                <img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0 flex-1"><div class="tiny truncate-1 font-medium">${esc(v.title)}</div><div class="tiny muted mt-1">${compact(v.recentViews)} recent views</div></div>
+              </div>`).join("") : `<div class="tiny muted">Recent per-video analytics unavailable.</div>`}
+            </div>
+          </article>
+        </section>
+        <section class="dashboard-bottom-grid">
+          <article class="card card-pad">
+            <div class="section-head"><div><h2 class="card-title">Top videos</h2><p class="section-subtitle">Ranked by lifetime views</p></div><button class="btn btn-sm" data-page="best">View rankings ${icon("arrow-up-right")}</button></div>
+            ${top.length ? top.map((v,i)=>`<div class="video-list-item">
+              <span class="rank-number ${i<3?"top":""}">${String(i+1).padStart(2,"0")}</span>
+              <img class="thumb thumb-sm" src="${esc(v.thumbnail)}" alt="${esc(v.title)} thumbnail">
+              <div class="min-w-0 flex-1"><button class="video-title-button clamp-2" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button>
+              <div class="tiny muted mt-2">${dateFmt(v.publishedAt)} · ${duration(v.duration)}</div></div>
+              <div class="text-right"><div class="small font-semibold">${compact(v.views)}</div><div class="tiny muted mt-1">views</div></div>
+            </div>`).join("") : unavailable("No video data","Connect and synchronize your channel uploads.","video")}
+          </article>
+          <article class="card card-pad">
+            <div class="section-head"><div><h2 class="card-title">Smart analysis</h2><p class="section-subtitle">Generated from loaded metrics</p></div><span class="badge badge-violet">${icon("sparkles")} AI READY</span></div>
+            ${insights.map(item=>`<div class="flex gap-3 py-3 border-b border-[var(--border)] last:border-0">
+              <div class="insight-icon" style="--insight-color:${item.color}">${icon(item.icon)}</div>
+              <div><div class="small font-semibold">${esc(item.title)}</div><p class="tiny muted mt-1 leading-relaxed clamp-2">${esc(item.body)}</p></div>
+            </div>`).join("")}
+            <button class="btn btn-dark w-full mt-4" data-page="ai">${icon("sparkles")} Open full analysis</button>
+          </article>
+        </section>`;
+    }
+
+    /* ---------- Channels ---------- */
+    function channelsPage() {
+      const cards = state.channels.map(channel => {
+        const active = channel.id === state.activeChannelId;
+        return `<article class="card card-hover channel-card">
+          <div class="channel-head">
+            <img class="channel-avatar" src="${esc(channel.avatar)}" alt="${esc(channel.name)} profile">
+            <div class="min-w-0 flex-1"><div class="flex items-center gap-2 flex-wrap"><h2 class="card-title text-[16px]">${esc(channel.name)}</h2>${active?`<span class="badge badge-live">ACTIVE</span>`:""}</div>
+            <div class="small muted mt-1">${esc(channel.handle || "YouTube channel")}</div>
+            <button class="tiny mono muted mt-2 flex items-center gap-1 hover:text-[var(--text)]" data-action="copy-channel" data-copy="${esc(channel.id)}">${esc(channel.id)} ${icon("copy")}</button></div>
+          </div>
+          <div class="channel-stats">
+            <div><div class="channel-stat-value">${compact(channel.subscribers)}</div><div class="channel-stat-label">SUBSCRIBERS</div></div>
+            <div><div class="channel-stat-value">${compact(channel.views)}</div><div class="channel-stat-label">TOTAL VIEWS</div></div>
+            <div><div class="channel-stat-value">${full(channel.videoCount)}</div><div class="channel-stat-label">VIDEOS</div></div>
+          </div>
+          <div class="flex items-center justify-between gap-3 mb-4"><span class="tiny muted">Last sync: ${timeAgo(channel.lastSync)}</span><span class="badge ${state.mode==="demo"?"badge-demo":"badge-live"}">${state.mode==="demo"?"SAMPLE":"CONNECTED"}</span></div>
+          <div class="flex flex-wrap gap-2">
+            ${!active?`<button class="btn btn-sm btn-primary" data-action="activate-channel" data-id="${esc(channel.id)}">${icon("circle-check")} Use channel</button>`:""}
+            <button class="btn btn-sm" data-action="connect">${icon("refresh-cw")} Reconnect</button>
+            <button class="btn btn-sm btn-danger" data-action="disconnect" data-id="${esc(channel.id)}">${icon("unlink")} Disconnect</button>
+          </div>
+        </article>`;
+      }).join("");
+      return `${pageHead("My Channels", "Connect multiple channels, switch workspaces and control authorization.", `<button class="btn btn-primary" data-action="connect">${icon("plus")} Connect channel</button>`)}
+        <div class="settings-layout">
+          <div><div class="channel-grid">${cards || emptyState()}</div></div>
+          <div class="space-y-4">
+            <article class="card card-pad">
+              <div class="flex items-center gap-3 mb-3"><div class="metric-icon" style="--metric-color:var(--green)">${icon("shield-check")}</div><h2 class="card-title">Secure by design</h2></div>
+              ${[
+                ["key-round","Read-only OAuth 2.0","Only authorized YouTube read scopes are requested."],
+                ["memory-stick","Memory-only access tokens","OAuth tokens are never written to localStorage."],
+                ["server-cog","No client secrets","Client IDs are public identifiers. Never add a client secret or unrestricted API key."],
+                ["list-checks","Quota-aware loading","Configurable upload limits and batched video requests reduce API usage."]
+              ].map(([ic,t,s])=>`<div class="security-item">${icon(ic)}<div><div class="small font-semibold">${t}</div><div class="tiny muted mt-1 leading-relaxed">${s}</div></div></div>`).join("")}
+            </article>
+            <article class="card card-pad">
+              <h2 class="card-title">Connection scopes</h2>
+              <div class="mt-3 space-y-2 tiny muted leading-relaxed">
+                <div class="flex justify-between gap-3"><span>YouTube Data API v3</span><span class="text-[var(--green)]">Read-only</span></div>
+                <div class="flex justify-between gap-3"><span>YouTube Analytics API</span><span class="text-[var(--green)]">Read-only</span></div>
+                <div class="flex justify-between gap-3"><span>Monetary reports</span><span>${state.settings.requestMonetary?"Optional":"Disabled"}</span></div>
+              </div>
+              <button class="btn w-full mt-4" data-page="settings">${icon("settings-2")} Connection settings</button>
+            </article>
+          </div>
+        </div>`;
+    }
+
+    /* ---------- Video analytics ---------- */
+    function filteredVideos() {
+      const query = state.videoSearch.trim().toLowerCase();
+      const filtered = state.videos.filter(v => {
+        if (state.videoFilter === "shorts" && !isShort(v)) return false;
+        if (state.videoFilter === "long" && isShort(v)) return false;
+        return !query || v.title.toLowerCase().includes(query) || (v.tags || []).join(" ").toLowerCase().includes(query);
+      });
+      return filtered.sort((a,b) => {
+        if (state.videoSort === "date") return new Date(b.publishedAt) - new Date(a.publishedAt);
+        if (state.videoSort === "title") return a.title.localeCompare(b.title);
+        const key = state.videoSort;
+        return (num(b[key]) ?? -Infinity) - (num(a[key]) ?? -Infinity);
+      });
+    }
+    function videoResultsTemplate() {
+      const videos = filteredVideos();
+      const pages = Math.max(1, Math.ceil(videos.length / state.videoPerPage));
+      state.videoPage = clamp(state.videoPage,1,pages);
+      const start = (state.videoPage-1)*state.videoPerPage;
+      const visible = videos.slice(start,start+state.videoPerPage);
+      if (!visible.length) return `<div class="card empty-state min-h-[300px]"><div><div class="empty-icon">${icon("search-x")}</div><h2>No matching videos</h2><p>Try another search term or content filter.</p></div></div>`;
+      return `<div class="table-wrap"><table class="data-table">
+        <thead><tr><th style="width:35px">Compare</th><th>Video</th><th>Upload date</th><th>Views</th><th>Likes</th><th>Comments</th><th>Watch time</th><th>Avg. duration</th><th>Retention</th><th>Subs gained</th><th>Revenue</th></tr></thead>
+        <tbody>${visible.map(v=>`<tr>
+          <td><input class="checkbox" type="checkbox" data-compare-id="${esc(v.id)}" ${state.compareIds.includes(v.id)?"checked":""} aria-label="Compare ${esc(v.title)}"></td>
+          <td><div class="table-video"><img class="thumb thumb-sm" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0"><button class="video-title-button clamp-2" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button><div class="tiny muted mt-1">${isShort(v)?`<span class="text-[var(--accent)]">SHORT</span> · `:""}${duration(v.duration)}</div></div></div></td>
+          <td>${dateFmt(v.publishedAt,{month:"short",day:"numeric",year:"2-digit"})}</td>
+          <td class="num">${compact(v.views)}</td><td>${compact(v.likes)}</td><td>${compact(v.comments)}</td>
+          <td>${hours(v.watchHours)}</td><td>${duration(v.avgViewDuration)}</td><td>${pct(v.retention)}</td>
+          <td class="num">${compact(v.subscribersGained)}</td><td>${money(v.revenue)}</td>
+        </tr>`).join("")}</tbody></table></div>
+        <div class="table-footer"><span>Showing ${start+1}–${Math.min(start+state.videoPerPage,videos.length)} of ${videos.length} videos${currentChannel()?.videoCount>state.videos.length?` · ${full(currentChannel().videoCount)} total on channel`:""}</span>
+        <div class="pagination"><button class="btn btn-sm" data-action="video-page" data-page-num="${state.videoPage-1}" ${state.videoPage===1?"disabled":""}>${icon("chevron-left")}</button>
+        <span class="btn btn-sm pointer-events-none">${state.videoPage} / ${pages}</span>
+        <button class="btn btn-sm" data-action="video-page" data-page-num="${state.videoPage+1}" ${state.videoPage===pages?"disabled":""}>${icon("chevron-right")}</button></div></div>`;
+    }
+    function videosPage() {
+      const gate = dataGate(); if (gate) return gate;
+      return `${pageHead("Video Analytics", "Lifetime Data API totals with available per-video Analytics API metrics.", `<button class="btn" data-action="export-videos">${icon("download")} Export CSV</button><button class="btn btn-primary" data-page="comparison">${icon("columns-3")} Compare selected</button>`)}
+        <div class="card toolbar">
+          <div class="input-wrap">${icon("search")}<input id="videoSearch" class="input" placeholder="Search title or topic..." value="${esc(state.videoSearch)}"></div>
+          <select id="videoFilter" class="select"><option value="all" ${state.videoFilter==="all"?"selected":""}>All content</option><option value="long" ${state.videoFilter==="long"?"selected":""}>Long-form</option><option value="shorts" ${state.videoFilter==="shorts"?"selected":""}>Shorts</option></select>
+          <select id="videoSort" class="select">
+            ${[["views","Sort: Views"],["likes","Sort: Likes"],["comments","Sort: Comments"],["watchHours","Sort: Watch time"],["retention","Sort: Retention"],["subscribersGained","Sort: Subscribers"],["revenue","Sort: Revenue"],["date","Sort: Upload date"],["title","Sort: Title"]].map(([v,l])=>`<option value="${v}" ${state.videoSort===v?"selected":""}>${l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="mb-3 flex items-center gap-2 tiny muted">${icon("info")} Watch time, retention and subscriber metrics use available lifetime YouTube Analytics reports. “—” means the API did not provide that field.</div>
+        <div id="videoResults">${videoResultsTemplate()}</div>`;
+    }
+
+    /* ---------- Best performing ---------- */
+    const rankingLabels = {viral:"Viral score",trending:"Recent views",views:"Views",likes:"Likes",comments:"Comments",retention:"Retention",subscribersGained:"Subscribers",low:"Views",last24h:"24h views"};
+    function bestPage() {
+      const gate = dataGate(); if (gate) return gate;
+      const viral = rankVideos("viral")[0];
+      const leaders = [
+        ["views","Most viewed","eye","#8b5cf6"],["likes","Most liked","thumbs-up","#ff4155"],
+        ["comments","Most discussed","message-circle","#38bdf8"],["subscribersGained","Subscriber driver","user-plus","#2dd4a0"],
+        ["retention","Best retention","timer","#f7b955"]
+      ];
+      const ranked = rankVideos(state.bestMetric).slice(0,state.bestCount);
+      const max = ranked.length ? Number(metricValue(ranked[0],state.bestMetric)) || 1 : 1;
+      const top24 = state.mode === "demo" ? rankVideos("last24h")[0] : null;
+      return `${pageHead("Best Performing Videos", "Viral, trending, engagement, retention and low-performance rankings.", `
+        <div class="segmented">${[10,20].map(n=>`<button data-action="best-count" data-value="${n}" class="${state.bestCount===n?"active":""}">Top ${n}</button>`).join("")}</div>`)}
+        <section class="hero-video mb-[16px]">
+          <img src="${esc(viral.thumbnail)}" alt="${esc(viral.title)}">
+          <div class="hero-video-content"><span class="badge" style="color:#ffd2d8;background:rgba(255,65,85,.18);border-color:rgba(255,100,115,.25)">${icon("flame")} MOST VIRAL BY VIEWS PER DAY</span>
+          <h2 class="hero-video-title">${esc(viral.title)}</h2><p class="small" style="color:#b6bfce">Published ${dateFmt(viral.publishedAt)} · ${compact(metricValue(viral,"viral"))} views per day since upload</p>
+          <div class="hero-stats"><div class="hero-stat"><strong>${compact(viral.views)}</strong><span>Views</span></div><div class="hero-stat"><strong>${compact(viral.likes)}</strong><span>Likes</span></div><div class="hero-stat"><strong>${pct(viral.retention)}</strong><span>Retention</span></div><div class="hero-stat"><strong>${compact(viral.subscribersGained)}</strong><span>Subs gained</span></div></div>
+          <button class="btn mt-6" data-action="video-detail" data-id="${esc(viral.id)}">${icon("chart-no-axes-combined")} View video details</button></div>
+        </section>
+        <section class="three-col mb-[16px]">
+          ${leaders.map(([metric,label,ic,color])=>{const v=rankVideos(metric)[0];return `<article class="card card-hover winner-card"><div class="winner-icon" style="color:${color};background:color-mix(in srgb,${color} 10%,transparent)">${icon(ic)}</div><img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0 flex-1"><div class="tiny muted font-semibold">${label.toUpperCase()}</div><button class="video-title-button truncate-1 w-full mt-1" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button></div><div class="small font-bold">${metric==="retention"?pct(metricValue(v,metric)):compact(metricValue(v,metric))}</div></article>`}).join("")}
+          <article class="card winner-card"><div class="winner-icon" style="color:var(--blue);background:rgba(56,189,248,.08)">${icon("zap")}</div>
+            ${top24?`<img class="thumb thumb-xs" src="${esc(top24.thumbnail)}" alt=""><div class="min-w-0 flex-1"><div class="tiny muted font-semibold">LAST 24 HOURS · SAMPLE</div><div class="small truncate-1 font-semibold mt-1">${esc(top24.title)}</div></div><div class="small font-bold">${compact(top24.last24h)}</div>`:`<div><div class="tiny muted font-semibold">LAST 24 HOURS</div><div class="small font-semibold mt-1">Not provided by public API</div><div class="tiny muted mt-1">No estimate shown</div></div>`}
+          </article>
+        </section>
+        <section class="card card-pad">
+          <div class="section-head"><div><h2 class="card-title">Video ranking system</h2><p class="section-subtitle">Trending uses available 28-day per-video views. Viral uses lifetime views per day since upload.</p></div>
+            <div class="segmented" style="flex-wrap:wrap">${[["viral","Viral"],["trending","Trending"],["views","Most viewed"],["likes","Most liked"],["retention","Best retention"],["low","Low performing"]].map(([id,l])=>`<button data-action="best-metric" data-value="${id}" class="${state.bestMetric===id?"active":""}">${l}</button>`).join("")}</div>
+          </div>
+          ${ranked.map((v,i)=>{const value=metricValue(v,state.bestMetric);const width=state.bestMetric==="low"?Math.max(8,(Number(value)||0)/max*100):(Number(value)||0)/max*100;return `<div class="rank-row">
+            <div class="rank-number ${i<3?"top":""}">${i+1}</div>
+            <div class="flex items-center gap-3 min-w-0"><img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0"><button class="video-title-button truncate-1 w-full" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button><div class="tiny muted mt-1">${dateFmt(v.publishedAt,{month:"short",day:"numeric",year:"2-digit"})}</div></div></div>
+            <div class="rank-progress"><span style="width:${clamp(width,2,100)}%"></span></div>
+            <div class="text-right"><div class="small font-bold">${state.bestMetric==="retention"?pct(value):compact(value)}</div><div class="tiny muted mt-1">${rankingLabels[state.bestMetric]}</div></div>
+          </div>`}).join("")}
+        </section>`;
+    }
+
+    /* ---------- Shorts ---------- */
+    function shortsPage() {
+      const gate = dataGate(); if (gate) return gate;
+      const shorts = state.videos.filter(isShort);
+      if (!shorts.length) return `${pageHead("Shorts Analytics","Short-form video analysis")}${emptyState("No Shorts detected","The YouTube Data API has no explicit Shorts flag. This workspace conservatively identifies videos with a duration of 60 seconds or less.")}`;
+      const ranked = rankVideos("views",shorts);
+      const views = sum(shorts,"views"), likes = sum(shorts,"likes"), comments = sum(shorts,"comments");
+      const engagedAvailable = shorts.some(v=>v.engagedViews !== null && v.engagedViews !== undefined);
+      const avgDuration = shorts.reduce((n,v)=>n+(v.avgViewDuration||0),0)/shorts.length;
+      return `${pageHead("Shorts Analytics", "Short-form views, engagement, watch behavior and subscriber contribution.", `<button class="btn" data-action="export-shorts">${icon("download")} Export Shorts</button>`)}
+        <div class="connection-notice mb-[16px]">${icon("info")}<span>Shorts are detected using duration ≤ 60 seconds. YouTube Data API v3 does not expose an explicit Shorts classification; newer longer Shorts may require manual verification.</span></div>
+        <section class="metric-grid mb-[16px]">
+          ${metricCard("Total Shorts",shorts.length,"integer","smartphone","#ff4155","Detected from loaded uploads")}
+          ${metricCard("Shorts views",views,"compact","eye","#8b5cf6","Lifetime across loaded Shorts")}
+          ${metricCard("Engaged views",engagedAvailable?sum(shorts,"engagedViews"):null,"compact","scan-eye","#38bdf8",engagedAvailable?"Available Analytics metric":"Not supplied by API")}
+          ${metricCard("Likes & comments",likes+comments,"compact","messages-square","#2dd4a0",`${pct(views?(likes+comments)/views*100:null)} engagement rate`)}
+          ${metricCard("Average view duration",avgDuration,"duration","timer","#f7b955","Across loaded Shorts")}
+          ${metricCard("Subscribers gained",sum(shorts,"subscribersGained"),"compact","user-plus","#fb7185","Attributed by Analytics API")}
+        </section>
+        <section class="section-head mt-2"><div><h2 class="section-title">Most viral Shorts</h2><p class="section-subtitle">Ranked by lifetime views</p></div></section>
+        <section class="shorts-grid mb-[18px]">${ranked.slice(0,5).map((v,i)=>`<article class="card card-hover short-card">
+          <div class="short-thumb-wrap"><img src="${esc(v.thumbnail)}" alt="${esc(v.title)}"><span class="short-duration">${duration(v.duration)}</span><span class="badge badge-demo" style="position:absolute;left:8px;top:8px;background:rgba(0,0,0,.65);color:white;border-color:rgba(255,255,255,.15)">#${i+1}</span></div>
+          <div class="short-body"><button class="video-title-button clamp-2 min-h-[35px]" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button>
+          <div class="flex items-center justify-between mt-3 tiny muted"><span>${icon("eye")} ${compact(v.views)}</span><span>${icon("thumbs-up")} ${compact(v.likes)}</span><span>${icon("message-circle")} ${compact(v.comments)}</span></div>
+          <div class="mt-3 pt-3 border-t border-[var(--border)] flex justify-between tiny"><span class="muted">Retention</span><strong>${pct(v.retention)}</strong></div></div>
+        </article>`).join("")}</section>
+        <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Shorts performance ranking</h2><p class="section-subtitle">Complete loaded Shorts leaderboard</p></div></div>
+        ${ranked.map((v,i)=>`<div class="rank-row"><div class="rank-number ${i<3?"top":""}">${i+1}</div><div class="flex items-center gap-3 min-w-0"><img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0"><button class="video-title-button truncate-1 w-full" data-action="video-detail" data-id="${esc(v.id)}">${esc(v.title)}</button><div class="tiny muted mt-1">${compact(v.subscribersGained)} subscribers gained</div></div></div><div class="rank-progress"><span style="width:${clamp(v.views/ranked[0].views*100,2,100)}%"></span></div><div class="text-right small font-bold">${compact(v.views)}<div class="tiny muted font-normal mt-1">views</div></div></div>`).join("")}</section>`;
+    }
+
+    /* ---------- Growth ---------- */
+    function aggregateDaily(period) {
+      const groups = {};
+      daily().forEach(row => {
+        const date = new Date(row.date+"T12:00:00");
+        let key;
+        if (period === "month") key = row.date.slice(0,7);
+        else {
+          const monday = new Date(date);
+          const offset = (date.getDay()+6)%7;
+          monday.setDate(date.getDate()-offset);
+          key = dateISO(monday);
+        }
+        if (!groups[key]) groups[key] = {date:key,views:0,estimatedMinutesWatched:0,subscribersGained:0,subscribersLost:0};
+        ["views","estimatedMinutesWatched","subscribersGained","subscribersLost"].forEach(k=>groups[key][k]+=Number(row[k])||0);
+      });
+      return Object.values(groups).sort((a,b)=>a.date.localeCompare(b.date));
+    }
+    function uploadImpacts() {
+      const map = new Map(daily().map((r,i)=>[r.date,i]));
+      return state.videos.map(v=>{
+        const index = map.get(dateISO(v.publishedAt));
+        if (index === undefined || index < 7 || index+7 >= daily().length) return null;
+        const before = sum(daily().slice(index-7,index),"views");
+        const after = sum(daily().slice(index,index+7),"views");
+        return before ? {video:v,lift:growth(after,before),after,before} : null;
+      }).filter(Boolean).sort((a,b)=>Math.abs(b.lift)-Math.abs(a.lift)).slice(0,8);
+    }
+    function monthComparison() {
+      const d = daily();
+      if (!d.length) return null;
+      const latest = new Date(d[d.length-1].date+"T12:00:00");
+      const day = latest.getDate();
+      const currentPrefix = dateISO(latest).slice(0,7);
+      const prev = new Date(latest.getFullYear(),latest.getMonth()-1,1);
+      const previousPrefix = dateISO(prev).slice(0,7);
+      const current = d.filter(r=>r.date.startsWith(currentPrefix));
+      const previous = d.filter(r=>r.date.startsWith(previousPrefix) && Number(r.date.slice(8,10))<=day);
+      const stats = rows => ({views:sum(rows,"views"),watch:sum(rows,"estimatedMinutesWatched")/60,subs:sum(rows,"subscribersGained")-sum(rows,"subscribersLost")});
+      return {current:stats(current),previous:stats(previous),currentLabel:dateFmt(latest,{month:"long"}),previousLabel:dateFmt(prev,{month:"long"}),day};
+    }
+    function growthPage() {
+      const gate = dataGate(false); if (gate) return gate;
+      if (!daily().length) return `${pageHead("Channel Growth","Daily, weekly and monthly growth analysis")}${unavailable("Growth data unavailable","YouTube Analytics read-only permission is required for daily growth reports.","chart-no-axes-combined")}`;
+      const comparison = monthComparison(), impacts = uploadImpacts();
+      const range = rangeDaily();
+      const currentViews = sum(range,"views"), prevViews = previousSum(Number(state.settings.range),"views");
+      const currentSubs = sum(range,"subscribersGained")-sum(range,"subscribersLost");
+      const prevRange = daily().slice(-(Number(state.settings.range)*2),-Number(state.settings.range));
+      const prevSubs = sum(prevRange,"subscribersGained")-sum(prevRange,"subscribersLost");
+      return `${pageHead("Channel Growth", "Daily, weekly and monthly views, subscribers, watch time and upload impact.", `
+        <div class="segmented">${[7,28,90,365].map(n=>`<button data-action="set-range" data-value="${n}" class="${Number(state.settings.range)===n?"active":""}">${n}D</button>`).join("")}</div>
+        <button class="btn" data-page="reports">${icon("file-down")} Growth report</button>`)}
+        <section class="four-col mb-[16px]">
+          <article class="card card-pad"><div class="tiny muted">VIEWS · ${state.settings.range} DAYS</div><div class="metric-value">${countHtml(currentViews)}</div><div class="metric-foot">${trendHtml(growth(currentViews,prevViews),"vs previous period")}</div></article>
+          <article class="card card-pad"><div class="tiny muted">NET SUBSCRIBERS</div><div class="metric-value">${countHtml(currentSubs)}</div><div class="metric-foot">${trendHtml(growth(currentSubs,prevSubs),"vs previous period")}</div></article>
+          <article class="card card-pad"><div class="tiny muted">WATCH HOURS</div><div class="metric-value">${countHtml(sum(range,"estimatedMinutesWatched")/60,"hours")}</div><div class="metric-foot">Selected period</div></article>
+          <article class="card card-pad"><div class="tiny muted">AVG. DAILY VIEWS</div><div class="metric-value">${countHtml(range.length?currentViews/range.length:null)}</div><div class="metric-foot">${range.length} reported days</div></article>
+        </section>
+        <section class="dashboard-main-grid mb-[16px]">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Daily views growth</h2><p class="section-subtitle">Daily channel views with upload markers in the table below</p></div></div><div class="chart-wrap"><canvas id="dailyGrowthChart"></canvas></div></article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Subscriber growth</h2><p class="section-subtitle">Gained minus lost subscribers</p></div></div><div class="chart-wrap"><canvas id="subscriberGrowthChart"></canvas></div></article>
+        </section>
+        <section class="two-col mb-[16px]">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Weekly views</h2><p class="section-subtitle">Aggregated by week beginning Monday</p></div></div><div class="chart-wrap sm"><canvas id="weeklyGrowthChart"></canvas></div></article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Monthly views & watch time</h2><p class="section-subtitle">Long-term channel trajectory</p></div></div><div class="chart-wrap sm"><canvas id="monthlyGrowthChart"></canvas></div></article>
+        </section>
+        <section class="two-col">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">This month vs previous month</h2><p class="section-subtitle">Fair month-to-date comparison through day ${comparison.day}</p></div><span class="badge badge-info">${comparison.currentLabel}</span></div>
+            <div class="growth-compare">${[["Views","views","compact"],["Watch hours","watch","hours"],["Net subscribers","subs","compact"]].map(([label,key,type])=>`<div class="compare-stat"><span class="tiny muted">${label}</span><strong>${formatByType(comparison.current[key],type)}</strong><div class="flex items-center gap-1 flex-wrap">${trendHtml(growth(comparison.current[key],comparison.previous[key]))}<span class="tiny muted">vs ${formatByType(comparison.previous[key],type)}</span></div></div>`).join("")}</div>
+            <div class="chart-wrap xs mt-5"><canvas id="monthCompareChart"></canvas></div>
+          </article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Upload impact</h2><p class="section-subtitle">Channel views in 7 days after upload vs 7 days before</p></div></div>
+            ${impacts.length?`<div class="chart-wrap xs mb-3"><canvas id="uploadImpactChart"></canvas></div>${impacts.slice(0,4).map(x=>`<div class="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0"><img class="thumb thumb-xs" src="${esc(x.video.thumbnail)}" alt=""><div class="min-w-0 flex-1"><div class="tiny truncate-1 font-medium">${esc(x.video.title)}</div><div class="tiny muted mt-1">${dateFmt(x.video.publishedAt,{month:"short",day:"numeric"})}</div></div>${trendHtml(x.lift)}</div>`).join("")}`:unavailable("Not enough upload-window data","Upload impact requires seven reported days before and after an upload.","upload")}
+          </article>
+        </section>`;
+    }
+
+    /* ---------- Audience ---------- */
+    function audiencePage() {
+      const gate = dataGate(false); if (gate) return gate;
+      const a = state.analytics.audience;
+      if (!a) return `${pageHead("Audience Analytics","Demographics and viewer geography")}${unavailable("Audience reports unavailable","Reconnect with YouTube Analytics read-only permission. Demographic reports may also be unavailable for small audiences.","users")}`;
+      const countries = a.countries || [], cities = a.cities || [], ages = a.ages || [], gender = a.gender || [];
+      const maxCountry = countries.length ? countries[0].views : 1;
+      return `${pageHead("Audience Analytics", "Available age, gender, country and city reports from YouTube Analytics.", `<span class="badge badge-info">API AVAILABILITY APPLIES</span>`)}
+        <section class="two-col mb-[16px]">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Age distribution</h2><p class="section-subtitle">Viewer percentage by age group</p></div></div>
+            ${ages.length?`<div class="chart-wrap sm"><canvas id="ageChart"></canvas></div>`:unavailable("Age data unavailable","YouTube may withhold demographic data when the audience is too small.")}
+          </article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Gender distribution</h2><p class="section-subtitle">Available viewer percentage report</p></div></div>
+            ${gender.length?`<div class="chart-wrap sm"><canvas id="genderChart"></canvas></div>`:unavailable("Gender data unavailable","No authorized demographic report was returned.")}
+          </article>
+        </section>
+        <section class="dashboard-main-grid mb-[16px]">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Top countries</h2><p class="section-subtitle">Views by viewer geography</p></div></div>
+            ${countries.length?countries.map(c=>`<div class="country-row"><span class="country-code">${esc(c.code)}</span><span class="small font-medium truncate-1">${esc(c.name)}</span><div class="rank-progress"><span style="width:${clamp(c.views/maxCountry*100,2,100)}%"></span></div><strong class="small text-right">${compact(c.views)}</strong></div>`).join(""):unavailable("Country data unavailable","No geographic report was returned for this period.")}
+          </article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Top cities & regions</h2><p class="section-subtitle">Where city-level reporting is available</p></div></div>
+            ${cities.length?cities.map((c,i)=>`<div class="flex items-center gap-3 py-3 border-b border-[var(--border)] last:border-0"><span class="rank-number">${i+1}</span><div class="flex-1 min-w-0"><div class="small font-medium truncate-1">${esc(c.name)}</div><div class="tiny muted mt-1">${esc(c.country || "—")}</div></div><strong class="small">${compact(c.views)}</strong></div>`).join(""):unavailable("City data unavailable","City-level data may be withheld or unsupported for this channel.")}
+          </article>
+        </section>
+        <section class="two-col">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">When viewers are active</h2><p class="section-subtitle">Audience activity by day and hour</p></div></div>
+            ${a.active?`<div class="overflow-x-auto"><div class="heatmap"><div></div>${Array.from({length:24},(_,h)=>`<div class="heat-label justify-center">${h%3===0?h:""}</div>`).join("")}
+              ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((day,di)=>`<div class="heat-label">${day}</div>${a.active[di].map((value,h)=>`<div class="heat-cell" style="--heat:${clamp(value/100,.04,1)}" title="${day} ${h}:00 · activity index ${value}"></div>`).join("")}`).join("")}</div>
+              <div class="flex items-center justify-end gap-2 tiny muted mt-4">Less active ${[.1,.3,.5,.7,.9].map(x=>`<span class="heat-cell" style="--heat:${x};width:13px"></span>`).join("")} More active</div></div>`:unavailable("Viewer active times unavailable","YouTube's public Analytics API does not expose the Studio 'When your viewers are on YouTube' report. No estimate is shown.","clock")}
+          </article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">New vs returning viewers</h2><p class="section-subtitle">Viewer loyalty distribution</p></div></div>
+            ${a.returning?`<div class="chart-wrap sm"><canvas id="returningChart"></canvas></div><div class="two-col mt-3"><div class="compare-stat"><span class="tiny muted">RETURNING</span><strong>${pct(a.returning.returning)}</strong></div><div class="compare-stat"><span class="tiny muted">NEW</span><strong>${pct(a.returning.new)}</strong></div></div>`:unavailable("New and returning viewers unavailable","This Studio metric is not currently exposed by the public YouTube Analytics API. No substitute or estimate is shown.","user-round-check")}
+          </article>
+        </section>`;
+    }
+
+    /* ---------- Comparison ---------- */
+    function comparisonPage() {
+      const gate = dataGate(); if (gate) return gate;
+      let selected = state.compareIds.map(id=>state.videos.find(v=>v.id===id)).filter(Boolean);
+      if (!selected.length) selected = rankVideos("views").slice(0,2);
+      const metrics = [
+        ["views","Views","compact",false],["likes","Likes","compact",false],["comments","Comments","compact",false],
+        ["watchHours","Watch time","hours",false],["avgViewDuration","Avg. view duration","duration",false],
+        ["subscribersGained","Subscribers gained","compact",false],["retention","Audience retention","percent",false]
+      ];
+      return `${pageHead("Video Comparison", "Compare two to four videos using normalized charts and raw metric values.", `<button class="btn" data-action="export-comparison">${icon("download")} Export comparison</button>`)}
+        <section class="card card-pad mb-[16px]">
+          <div class="section-head"><div><h2 class="card-title">Selected videos</h2><p class="section-subtitle">${selected.length} of 4 comparison slots used</p></div><span class="badge badge-info">MAX 4 VIDEOS</span></div>
+          <div class="flex flex-wrap gap-2 mb-4">${selected.map(v=>`<span class="compare-chip"><img class="thumb thumb-xs" style="width:42px" src="${esc(v.thumbnail)}" alt=""><span class="truncate-1">${esc(v.title)}</span><button data-action="compare-remove" data-id="${esc(v.id)}" aria-label="Remove">${icon("x")}</button></span>`).join("")}</div>
+          <div class="flex gap-2 max-w-[650px]"><select id="compareSelect" class="select"><option value="">Choose a video to add...</option>${state.videos.filter(v=>!state.compareIds.includes(v.id)).map(v=>`<option value="${esc(v.id)}">${esc(v.title)}</option>`).join("")}</select><button class="btn btn-primary" data-action="compare-add" ${selected.length>=4?"disabled":""}>${icon("plus")} Add</button></div>
+        </section>
+        ${selected.length<2?emptyState("Select at least two videos","Add videos above to unlock normalized radar analysis and side-by-side metrics."):` 
+        <section class="dashboard-main-grid mb-[16px]">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Normalized performance</h2><p class="section-subtitle">Each axis is scaled to the strongest selected video</p></div></div><div class="chart-wrap"><canvas id="comparisonRadar"></canvas></div></article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Category winners</h2><p class="section-subtitle">Best raw value for each metric</p></div></div>
+            ${metrics.map(([key,label,type])=>{const winner=[...selected].sort((a,b)=>(b[key]??-Infinity)-(a[key]??-Infinity))[0];return `<div class="flex items-center gap-3 py-3 border-b border-[var(--border)] last:border-0"><div class="flex-1"><div class="tiny muted">${label}</div><div class="small truncate-1 font-medium mt-1">${esc(winner.title)}</div></div><strong class="small">${formatByType(winner[key],type)}</strong></div>`}).join("")}
+          </article>
+        </section>
+        <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Side-by-side metrics</h2><p class="section-subtitle">Green cells indicate the strongest selected video</p></div></div>
+          <div class="table-wrap"><table class="data-table" style="min-width:750px"><thead><tr><th>Metric</th>${selected.map(v=>`<th><div class="flex items-center gap-2 normal-case tracking-normal"><img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><span class="max-w-[170px] truncate-1">${esc(v.title)}</span></div></th>`).join("")}</tr></thead>
+          <tbody>${metrics.map(([key,label,type])=>{const max=Math.max(...selected.map(v=>Number(v[key])||0));return `<tr><td class="num">${label}</td>${selected.map(v=>`<td class="${Number(v[key])===max?"best-cell":""}">${formatByType(v[key],type)}</td>`).join("")}</tr>`}).join("")}</tbody></table></div>
+        </section>`}`;
+    }
+
+    /* ---------- Data-grounded smart analysis ---------- */
+    function topicScores() {
+      const stop = new Set(["this","that","with","your","from","have","what","when","only","just","like","make","every","into","youtube","video","videos","shorts","creator","best","most","full","complete","should","after","before"]);
+      const scores = {};
+      state.videos.forEach(v=>{
+        const words = v.tags?.length ? v.tags : v.title.toLowerCase().replace(/[^a-z0-9\s]/g,"").split(/\s+/);
+        [...new Set(words.map(w=>w.toLowerCase()).filter(w=>w.length>3&&!stop.has(w)))].forEach(word=>{
+          if (!scores[word]) scores[word] = {topic:word,views:0,count:0};
+          scores[word].views += Number(v.views)||0; scores[word].count++;
+        });
+      });
+      return Object.values(scores).sort((a,b)=>(b.views/b.count)-(a.views/a.count));
+    }
+    function getLocalInsights() {
+      if (!state.videos.length) return [];
+      const byRecent = rankVideos("trending"), byViews = rankVideos("views"), byRetention = rankVideos("retention").filter(v=>v.views>1000);
+      const strong = byRecent[0].recentViews !== null ? byRecent[0] : rankVideos("viral")[0];
+      const mature = state.videos.filter(v=>videoAge(v)>=14);
+      const sortedViews = mature.map(v=>v.views).sort((a,b)=>a-b);
+      const median = sortedViews.length?sortedViews[Math.floor(sortedViews.length/2)]:0;
+      const weak = [...mature].filter(v=>v.views<median*.6).sort((a,b)=>a.views-b.views)[0] || rankVideos("low")[0];
+      const topics = topicScores();
+      const titleCandidate = [...state.videos].filter(v=>v.title.length>70 || (v.views<median*.75 && v.title.length<28)).sort((a,b)=>a.views-b.views)[0];
+      const d30 = daily().slice(-30), prev30 = daily().slice(-60,-30);
+      const views30 = sum(d30,"views"), viewGrowth = growth(views30,sum(prev30,"views"));
+      const retention = byRetention[0];
+      const uploadCount30 = state.videos.filter(v=>videoAge(v)<=30).length;
+      return [
+        {type:"success",icon:"trending-up",color:"#2dd4a0",title:"Strongest current performer",body:`“${strong.title}” leads ${strong.recentViews!==null?"recent 28-day views":"views per day since upload"} with ${compact(strong.recentViews??metricValue(strong,"viral"))}. Consider a follow-up while its topic has momentum.`},
+        {type:"warning",icon:"triangle-alert",color:"#f7b955",title:"Video needing attention",body:`“${weak.title}” is below the mature-video median with ${compact(weak.views)} views. Review its search intent, opening 30 seconds and packaging before reusing the format.`},
+        {type:"topic",icon:"lightbulb",color:"#8b5cf6",title:"Recommended next topic",body:topics.length?`Your strongest weighted topic is “${topics[0].topic}”, generating ${compact(topics[0].views)} views across ${topics[0].count} related upload${topics[0].count===1?"":"s"}. Build a new angle rather than repeating the same title.`:"Add more uploads to unlock topic recommendations."},
+        {type:"retention",icon:"timer",color:"#38bdf8",title:"Retention pattern to reuse",body:`“${retention.title}” has the strongest available audience retention at ${pct(retention.retention)}. Analyze its pacing and structure; retention alone does not prove causation.`},
+        {type:"packaging",icon:"image",color:"#fb7185",title:"Title and thumbnail review",body:titleCandidate?`Review packaging for “${titleCandidate.title}”. Its title is ${titleCandidate.title.length} characters and lifetime views are ${compact(titleCandidate.views)}. Impressions CTR is not exposed by the API, so validate thumbnail changes in YouTube Studio.`:`Impressions CTR is not available through the connected APIs. Use YouTube Studio to validate thumbnail and title changes; no CTR has been inferred here.`},
+        {type:"growth",icon:"chart-no-axes-combined",color:viewGrowth!==null&&viewGrowth>=0?"#2dd4a0":"#fb7185",title:"30-day growth recommendation",body:d30.length?`Views are ${viewGrowth===null?"without a complete comparison":`${Math.abs(viewGrowth).toFixed(1)}% ${viewGrowth>=0?"up":"down"} versus the previous 30 days`}. You published ${uploadCount30} loaded video${uploadCount30===1?"":"s"} in 30 days; maintain a sustainable cadence and prioritize the strongest topic.`:"Daily Analytics data is required for a 30-day growth recommendation."}
+      ];
+    }
+    function buildAIContext() {
+      const c = currentChannel();
+      return {
+        dataMode:state.mode, channel:c?.name, rangeDays:30,
+        totals:{subscribers:c?.subscribers,views:c?.views,videos:c?.videoCount},
+        last30Days:{views:sumLast(30,"views"),watchHours:daily().length?sum(daily().slice(-30),"estimatedMinutesWatched")/60:null,subscribersGained:sumLast(30,"subscribersGained"),subscribersLost:sumLast(30,"subscribersLost")},
+        videos:state.videos.slice(0,100).map(v=>({title:v.title,publishedAt:v.publishedAt,views:v.views,likes:v.likes,comments:v.comments,watchHours:v.watchHours,averageViewDuration:v.avgViewDuration,retention:v.retention,subscribersGained:v.subscribersGained,recentViews:v.recentViews})),
+        limitations:["No minute-level real-time data","No inferred impressions CTR","Unavailable fields are null"]
+      };
+    }
+    function localAnswer(question) {
+      const q = question.toLowerCase(), insights = getLocalInsights();
+      if (q.includes("weak") || q.includes("low") || q.includes("worst") || q.includes("कमजोर")) return insights[1].body;
+      if (q.includes("topic") || q.includes("next") || q.includes("अगला")) return insights[2].body;
+      if (q.includes("title") || q.includes("thumbnail")) return insights[4].body;
+      if (q.includes("retention")) return insights[3].body;
+      if (q.includes("grow") || q.includes("growth") || q.includes("report") || q.includes("30")) return insights[5].body;
+      if (q.includes("best") || q.includes("perform") || q.includes("viral")) return insights[0].body;
+      return `Based on the loaded data: ${insights[0].body}\n\nNext step: ${insights[2].body}\n\nAsk about weak videos, retention, titles, growth or your 30-day report for a focused answer.`;
+    }
+    async function callAIProxy(prompt) {
+      if (!state.settings.aiProxy) return null;
+      const response = await fetch(state.settings.aiProxy,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,context:buildAIContext()})});
+      if (!response.ok) throw new Error(`Secure AI proxy returned ${response.status}`);
+      const data = await response.json();
+      return data.text || data.output || data.candidates?.[0]?.content?.parts?.map(p=>p.text).join("\n") || null;
+    }
+    async function runAIAnalysis() {
+      if (!state.videos.length) return toast("Load video analytics first","error");
+      state.aiLoading = true; renderPage();
+      try {
+        state.aiInsights = getLocalInsights();
+        state.aiNarrative = await callAIProxy("Act as a senior YouTube channel strategist. Use only the supplied analytics. Identify strong and weak videos, topic opportunities, packaging reviews, growth actions and a concise 30-day report. Explicitly acknowledge unavailable metrics; never invent values.") || "";
+        state.aiLastRun = new Date().toISOString();
+        toast(state.settings.aiProxy?"Secure AI analysis complete":"Smart analysis refreshed");
+      } catch(error) {
+        state.aiNarrative = "";
+        toast(`${error.message}. Local data-grounded insights remain available.`,"error");
+      } finally { state.aiLoading=false; renderPage(); }
+    }
+    function aiPage() {
+      const gate = dataGate(); if (gate) return gate;
+      const insights = state.aiInsights.length?state.aiInsights:getLocalInsights();
+      const d30 = daily().slice(-30), previous = daily().slice(-60,-30);
+      const report = {
+        views:sum(d30,"views"), watch:sum(d30,"estimatedMinutesWatched")/60,
+        subs:sum(d30,"subscribersGained")-sum(d30,"subscribersLost"),
+        engagement:sum(d30,"views")?((sum(state.videos,"likes")+sum(state.videos,"comments"))/Math.max(1,sum(state.videos,"views"))*100):null,
+        change:growth(sum(d30,"views"),sum(previous,"views"))
+      };
+      return `${pageHead("Smart AI Analysis", "Recommendations grounded only in loaded analytics, with an optional secure Gemini/OpenAI proxy.", `
+        <button class="btn btn-primary" data-action="run-ai" ${state.aiLoading?"disabled":""}>${icon("sparkles")} ${state.aiLoading?"Analyzing...":"Run analysis"}</button>`)}
+        <section class="card ai-hero mb-[16px]">
+          <div class="flex items-start gap-4 relative z-10"><div class="ai-symbol">${icon("sparkles")}</div><div class="flex-1"><div class="flex items-center gap-2 flex-wrap"><h2 class="section-title">Creator intelligence briefing</h2><span class="badge badge-violet">${state.settings.aiProxy?"SECURE AI PROXY":"LOCAL INSIGHT ENGINE"}</span></div>
+          <p class="section-subtitle max-w-[760px]">Every recommendation below is derived from your loaded channel and video metrics. Unavailable data is excluded rather than simulated. Configure a server-side AI proxy in Settings for generative analysis without exposing an API key.</p>
+          <div class="flex items-center gap-3 mt-4 tiny muted"><span>${icon("database")} ${state.videos.length} videos analyzed</span><span>${icon("calendar")} ${daily().length} daily rows</span><span>${state.aiLastRun?"Updated "+timeAgo(state.aiLastRun):"Ready to analyze"}</span></div></div></div>
+        </section>
+        ${state.aiNarrative?`<section class="card card-pad mb-[16px]"><div class="section-head"><div><h2 class="card-title">Secure AI narrative</h2><p class="section-subtitle">Generated by your configured server-side AI endpoint</p></div><button class="btn btn-sm" data-action="copy-ai">${icon("copy")} Copy</button></div><div class="small text-soft leading-7 whitespace-pre-wrap">${esc(state.aiNarrative)}</div></section>`:""}
+        <section class="three-col mb-[16px]">${insights.map(item=>`<article class="card card-hover insight-card" style="--insight-color:${item.color}"><div class="insight-icon mb-4">${icon(item.icon)}</div><h3 class="card-title">${esc(item.title)}</h3><p class="small muted mt-3 leading-relaxed">${esc(item.body)}</p></article>`).join("")}</section>
+        <section class="dashboard-main-grid">
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">30-day performance report</h2><p class="section-subtitle">Computed from available daily channel reports</p></div><button class="btn btn-sm" data-action="copy-report">${icon("copy")} Copy report</button></div>
+            <div class="four-col mb-5"><div class="compare-stat"><span class="tiny muted">VIEWS</span><strong>${compact(report.views)}</strong>${trendHtml(report.change)}</div><div class="compare-stat"><span class="tiny muted">WATCH HOURS</span><strong>${compact(report.watch)}</strong></div><div class="compare-stat"><span class="tiny muted">NET SUBSCRIBERS</span><strong>${compact(report.subs)}</strong></div><div class="compare-stat"><span class="tiny muted">TOP VIDEO</span><strong class="text-[13px] leading-snug">${esc(rankVideos("views")[0].title.slice(0,28))}...</strong></div></div>
+            <div id="aiReportText" class="small text-soft leading-7 whitespace-pre-wrap">${esc(build30DayReport())}</div>
+            <button class="btn mt-5" data-page="reports">${icon("file-chart-column")} Build downloadable report</button>
+          </article>
+          <article class="card card-pad"><div class="section-head"><div><h2 class="card-title">Ask your analytics</h2><p class="section-subtitle">Questions are answered from loaded data</p></div>${icon("message-square-text")}</div>
+            <div class="chat-box" id="chatBox">${state.chat.length?state.chat.map(m=>`<div class="chat-message ${m.role}"><div class="chat-bubble">${esc(m.text)}</div></div>`).join(""):`<div class="chat-message"><div class="chat-bubble">Ask which video is strongest, what to publish next, which titles need work, or for a 30-day growth summary.</div></div>`}</div>
+            <div class="flex flex-wrap gap-2 my-3">${["What should I publish next?","Which video is weak?","Summarize 30-day growth"].map(q=>`<button class="btn btn-sm" data-action="ask-preset" data-question="${esc(q)}">${q}</button>`).join("")}</div>
+            <form id="aiChatForm" class="flex gap-2"><input id="aiQuestion" class="input" placeholder="Ask about your channel..." required><button class="btn btn-primary" type="submit" aria-label="Send">${icon("send")}</button></form>
+          </article>
+        </section>`;
+    }
+    function build30DayReport() {
+      const d = daily().slice(-30), p = daily().slice(-60,-30);
+      if (!d.length) return "Daily YouTube Analytics data is unavailable. Connect with Analytics read-only permission to generate a 30-day report.";
+      const top = rankVideos("trending")[0], topics = topicScores();
+      return `Performance summary\n• ${full(sum(d,"views"))} views across ${d.length} reported days.\n• ${compact(sum(d,"estimatedMinutesWatched")/60)} watch hours.\n• ${full(sum(d,"subscribersGained")-sum(d,"subscribersLost"))} net subscribers.\n• Views changed ${growth(sum(d,"views"),sum(p,"views"))?.toFixed(1) ?? "—"}% versus the previous 30 days.\n\nContent leader\n${top.title} leads recent performance with ${compact(top.recentViews)} views in the available 28-day report.\n\nRecommended focus\n${topics.length?`Develop a new angle on ${topics[0].topic}, the strongest view-weighted topic in the loaded catalog.`:"Continue collecting topic-level performance data."}\n\nMeasurement note\nThis report uses only loaded YouTube data. It does not infer real-time views, impressions CTR, or unavailable demographic metrics.`;
+    }
+
+    /* ---------- Reports ---------- */
+    function ensureReportRange() {
+      const d = daily();
+      const end = state.report.end || (d.length?d[d.length-1].date:dateISO(new Date()));
+      let start = state.report.start;
+      if (!start) {
+        const days = state.report.type==="daily"?0:state.report.type==="weekly"?6:29;
+        start = dateISO(new Date(new Date(end+"T12:00:00").getTime()-days*DAY));
+        state.report.start=start; state.report.end=end;
+      }
+    }
+    function reportRows() {
+      ensureReportRange();
+      return daily().filter(r=>r.date>=state.report.start&&r.date<=state.report.end);
+    }
+    function reportsPage() {
+      const gate = dataGate(false); if (gate) return gate;
+      ensureReportRange();
+      const rows = reportRows();
+      const totals = {views:sum(rows,"views"),watch:sum(rows,"estimatedMinutesWatched")/60,gained:sum(rows,"subscribersGained"),lost:sum(rows,"subscribersLost"),revenue:state.analytics.revenueAvailable?sum(rows,"estimatedRevenue"):null};
+      return `${pageHead("Reports", "Build daily, weekly, monthly and custom reports from authorized analytics.", `
+        <button class="btn" data-action="export-pdf" ${!rows.length?"disabled":""}>${icon("file-down")} Download PDF</button>
+        <button class="btn btn-primary" data-action="export-xlsx" ${!rows.length?"disabled":""}>${icon("sheet")} Download Excel</button>`)}
+        <section class="card card-pad mb-[16px]">
+          <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div class="segmented">${[["daily","Daily"],["weekly","Weekly"],["monthly","Monthly"],["custom","Custom range"]].map(([id,l])=>`<button data-action="report-quick" data-value="${id}" class="${state.report.type===id?"active":""}">${l}</button>`).join("")}</div>
+            <div class="flex items-end gap-2 flex-wrap"><div><label class="field-label">Start date</label><input id="reportStart" class="input" type="date" value="${state.report.start}"></div><div><label class="field-label">End date</label><input id="reportEnd" class="input" type="date" value="${state.report.end}"></div><button class="btn btn-primary" data-action="report-generate">${icon("play")} Generate</button></div>
+          </div>
+        </section>
+        ${rows.length?`
+        <section class="report-summary mb-[16px]">
+          <article class="card report-stat"><span class="tiny muted">TOTAL VIEWS</span><strong>${compact(totals.views)}</strong></article>
+          <article class="card report-stat"><span class="tiny muted">WATCH HOURS</span><strong>${compact(totals.watch)}</strong></article>
+          <article class="card report-stat"><span class="tiny muted">SUBSCRIBERS GAINED</span><strong>${compact(totals.gained)}</strong></article>
+          <article class="card report-stat"><span class="tiny muted">SUBSCRIBERS LOST</span><strong>${compact(totals.lost)}</strong></article>
+          <article class="card report-stat"><span class="tiny muted">ESTIMATED REVENUE</span><strong>${money(totals.revenue)}</strong></article>
+        </section>
+        <section class="card card-pad mb-[16px]"><div class="section-head"><div><h2 class="card-title">Report trend</h2><p class="section-subtitle">${dateFmt(state.report.start)} – ${dateFmt(state.report.end)} · ${rows.length} reported days</p></div></div><div class="chart-wrap"><canvas id="reportChart"></canvas></div></section>
+        <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Daily report rows</h2><p class="section-subtitle">Exports include exactly these available values</p></div></div><div class="table-wrap"><table class="data-table" style="min-width:750px"><thead><tr><th>Date</th><th>Views</th><th>Watch hours</th><th>Subscribers gained</th><th>Subscribers lost</th><th>Net subscribers</th><th>Estimated revenue</th></tr></thead><tbody>
+          ${[...rows].reverse().map(r=>`<tr><td class="num">${dateFmt(r.date)}</td><td>${full(r.views)}</td><td>${(r.estimatedMinutesWatched/60).toFixed(1)}</td><td>${full(r.subscribersGained)}</td><td>${full(r.subscribersLost)}</td><td class="num">${full(r.subscribersGained-r.subscribersLost)}</td><td>${state.analytics.revenueAvailable?money(r.estimatedRevenue):"—"}</td></tr>`).join("")}
+        </tbody></table></div></section>`:unavailable("No rows in this report","Daily Analytics data is unavailable for the selected range. Choose another range or reconnect with Analytics permission.","file-question")}`;
+    }
+
+    /* ---------- Settings ---------- */
+    function settingsPage() {
+      return `${pageHead("Settings", "Appearance, OAuth connection, secure AI and local data controls.", `<button class="btn btn-primary" type="submit" form="settingsForm">${icon("save")} Save settings</button>`)}
+        <form id="settingsForm" class="settings-layout">
+          <div class="space-y-4">
+            <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Appearance</h2><p class="section-subtitle">Personalize your analytics workspace</p></div>${icon("palette")}</div>
+              <div class="setting-row"><div><div class="small font-semibold">Color theme</div><div class="tiny muted mt-1">Dark and light modes update charts instantly.</div></div><div class="segmented"><button type="button" data-action="set-theme" data-value="dark" class="${state.settings.theme==="dark"?"active":""}">Dark</button><button type="button" data-action="set-theme" data-value="light" class="${state.settings.theme==="light"?"active":""}">Light</button></div></div>
+              <div class="setting-row"><div><div class="small font-semibold">Accent color</div><div class="tiny muted mt-1">Used for actions and selected data series.</div></div><div class="flex gap-2">${Object.entries(accents).map(([id,a])=>`<button type="button" class="accent-dot ${state.settings.accent===id?"active":""}" data-action="set-accent" data-value="${id}" style="background:${a.hex}" aria-label="${id} accent"></button>`).join("")}</div></div>
+              <div class="setting-row"><div><div class="small font-semibold">Reduce motion</div><div class="tiny muted mt-1">Minimize counter, page and chart animations.</div></div><input id="reduceMotion" class="checkbox" type="checkbox" ${state.settings.reduceMotion?"checked":""}></div>
+            </section>
+            <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Google OAuth & YouTube APIs</h2><p class="section-subtitle">Public client configuration only — never enter a secret</p></div>${icon("key-round")}</div>
+              <label class="field-label" for="clientId">OAuth 2.0 Web Client ID</label><input id="clientId" class="input mono" placeholder="xxxxxxxx.apps.googleusercontent.com" value="${esc(state.settings.clientId)}" autocomplete="off">
+              <p class="field-help">Enable YouTube Data API v3 and YouTube Analytics API in Google Cloud. Add <span class="mono text-soft">${esc(location.origin)}</span> to Authorized JavaScript origins. A Client ID is not an API key or client secret.</p>
+              <div class="setting-row"><div><div class="small font-semibold">Request monetary read-only scope</div><div class="tiny muted mt-1">Estimated revenue appears only when Google grants access and the channel is eligible.</div></div><input id="requestMonetary" class="checkbox" type="checkbox" ${state.settings.requestMonetary?"checked":""}></div>
+              <div class="two-col mt-4"><div><label class="field-label">Maximum uploads per sync</label><select id="maxVideos" class="select">${[50,100,250].map(n=>`<option value="${n}" ${Number(state.settings.maxVideos)===n?"selected":""}>Latest ${n} videos</option>`).join("")}</select></div><div><label class="field-label">Default analytics range</label><select id="defaultRange" class="select">${[7,28,90,365].map(n=>`<option value="${n}" ${Number(state.settings.range)===n?"selected":""}>${n} days</option>`).join("")}</select></div></div>
+              <button type="button" class="btn btn-primary mt-5" data-action="connect">${icon("link")} Connect or reconnect with Google</button>
+            </section>
+            <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Secure AI provider</h2><p class="section-subtitle">Optional Gemini or OpenAI server-side proxy</p></div>${icon("sparkles")}</div>
+              <label class="field-label" for="aiProxy">Backend AI endpoint URL</label><input id="aiProxy" class="input" type="url" placeholder="https://your-domain.com/api/analyze" value="${esc(state.settings.aiProxy)}">
+              <p class="field-help">The endpoint receives a POST request containing { prompt, context }. Keep Gemini/OpenAI credentials on your backend. Without an endpoint, the built-in deterministic insight engine runs locally.</p>
+            </section>
+          </div>
+          <div class="space-y-4">
+            <section class="card card-pad"><div class="section-head"><div><h2 class="card-title">Privacy & security</h2><p class="section-subtitle">Current browser session</p></div>${icon("shield-check")}</div>
+              ${[["memory-stick","Token storage","Access token exists in memory only and is cleared on reload."],["key-round","Credential storage","Only your public OAuth Client ID and preferences are persisted."],["scan-eye","Data minimization","Only authorized channel metrics are requested; unavailable values remain blank."],["unlink","User control","Disconnect channels or revoke this session at any time."]].map(([ic,t,s])=>`<div class="security-item">${icon(ic)}<div><div class="small font-semibold">${t}</div><div class="tiny muted mt-1 leading-relaxed">${s}</div></div></div>`).join("")}
+            </section>
+            <section class="card card-pad"><h2 class="card-title">Session activity</h2><div class="mt-4 space-y-3 small"><div class="flex justify-between"><span class="muted">Estimated Data API units</span><strong>${state.quotaUsed}</strong></div><div class="flex justify-between"><span class="muted">Analytics queries</span><strong>${state.analyticsQueries}</strong></div><div class="flex justify-between"><span class="muted">Loaded channels</span><strong>${state.channels.length}</strong></div><div class="flex justify-between"><span class="muted">Loaded videos</span><strong>${state.videos.length}</strong></div></div><p class="tiny muted mt-4 leading-relaxed">Activity counters are informational and reset with the browser session. They are not Google Cloud billing or quota meters.</p></section>
+            <section class="card card-pad"><h2 class="card-title">Data controls</h2><p class="section-subtitle">Manage local connection metadata</p><div class="grid gap-2 mt-4"><button type="button" class="btn" data-action="sign-out">${icon("log-out")} Revoke current session</button><button type="button" class="btn btn-danger" data-action="clear-data">${icon("trash-2")} Clear connected data</button>${state.mode!=="demo"?`<button type="button" class="btn" data-action="load-demo">${icon("flask-conical")} Open sample workspace</button>`:`<button type="button" class="btn" data-action="reset-demo">${icon("rotate-ccw")} Reset sample workspace</button>`}</div></section>
+          </div>
+        </form>`;
+    }
+
+    /* ---------- Rendering ---------- */
+    const pages = {dashboard:dashboardPage,channels:channelsPage,videos:videosPage,best:bestPage,shorts:shortsPage,growth:growthPage,audience:audiencePage,comparison:comparisonPage,ai:aiPage,reports:reportsPage,settings:settingsPage};
+    function destroyCharts() {
+      Object.values(state.charts).forEach(chart=>{try{chart.destroy()}catch{}});
+      state.charts = {};
+    }
+    function renderChrome() {
+      const current = menu.find(m=>m.id===state.page) || menu[0];
+      $("#topbarTitle").textContent = current.label;
+      $("#topbarSubtitle").textContent = current.sub;
+      $("#sideNav").innerHTML = menu.map((m,i)=>`${i===8?`<div class="nav-label">INTELLIGENCE & TOOLS</div>`:""}<button class="nav-item ${state.page===m.id?"active":""}" data-page="${m.id}">${icon(m.icon)}<span>${m.label}</span>${m.id==="ai"?`<span class="nav-ai-badge">AI</span>`:""}</button>`).join("");
+      const channel = currentChannel();
+      $("#channelSwitcher").innerHTML = state.channels.length?state.channels.map(c=>`<option value="${esc(c.id)}" ${c.id===state.activeChannelId?"selected":""}>${esc(c.name)}</option>`).join(""):`<option>No channel connected</option>`;
+      $("#channelSwitcher").disabled = !state.channels.length;
+      $("#globalRange").value = String(state.settings.range);
+      if (channel) {
+        $("#topbarAvatar").src = channel.avatar || "";
+        $("#sidebarProfile").innerHTML = `<img class="avatar" src="${esc(channel.avatar)}" alt=""><div class="min-w-0 flex-1"><div class="small truncate-1 font-semibold">${esc(channel.name)}</div><div class="tiny muted mt-1 truncate-1">${esc(channel.handle||channel.id)}</div></div>${icon("chevron-right")}`;
+      } else {
+        $("#topbarAvatar").removeAttribute("src");
+        $("#sidebarProfile").innerHTML = `<div class="avatar grid place-items-center">${icon("user")}</div><div class="flex-1"><div class="small font-semibold">No channel</div><div class="tiny muted mt-1">Connect to begin</div></div>`;
+      }
+      $("#quotaText").textContent = `${state.quotaUsed} estimated units`;
+      $("#quotaBar").style.width = `${clamp(state.quotaUsed/100,1,100)}%`;
+      $("#themeIcon").dataset.lucide = state.settings.theme==="dark"?"sun":"moon";
+      if (window.lucide) lucide.createIcons();
+    }
+    function renderNotice() {
+      const root = $("#connectionNotice");
+      if (state.noticeDismissed || (state.mode==="live"&&state.accessToken)) { root.innerHTML=""; return; }
+      if (state.mode==="demo") {
+        root.innerHTML = `<div class="connection-notice demo">${icon("flask-conical")}<span><strong>Sample workspace:</strong> every number currently shown is clearly labeled sample data. Connect your channel to replace it with authorized YouTube API data.</span><div class="notice-actions"><button class="btn btn-sm btn-primary" data-action="connect">Connect real channel</button><button class="icon-btn" style="width:30px;height:30px" data-action="dismiss-notice" aria-label="Dismiss">${icon("x")}</button></div></div>`;
+      } else if (!state.accessToken) {
+        root.innerHTML = `<div class="connection-notice">${icon("key-round")}<span><strong>Reconnect required:</strong> your OAuth token is intentionally not persisted. Channel metadata may be visible, but fresh analytics requires authorization.</span><div class="notice-actions"><button class="btn btn-sm btn-primary" data-action="connect">Reconnect</button><button class="icon-btn" style="width:30px;height:30px" data-action="dismiss-notice">${icon("x")}</button></div></div>`;
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+    function renderPage() {
+      destroyCharts();
+      renderChrome();
+      const renderer = pages[state.page] || dashboardPage;
+      $("#pageContent").innerHTML = `<div class="page-enter">${renderer()}</div>`;
+      renderNotice();
+      if (window.lucide) lucide.createIcons();
+      animateCounters();
+      requestAnimationFrame(initCharts);
+      if (state.page==="ai") { const box=$("#chatBox"); if(box) box.scrollTop=box.scrollHeight; }
+    }
+    function setPage(page) {
+      if (!pages[page]) return;
+      state.page=page;
+      closeModal(); closeSidebar();
+      renderPage();
+      window.scrollTo({top:0,behavior:state.settings.reduceMotion?"auto":"smooth"});
+    }
+    function animateCounters() {
+      $$("[data-count]").forEach(el=>{
+        const target=Number(el.dataset.count), type=el.dataset.format||"compact";
+        if (!Number.isFinite(target)) {el.textContent="—";return;}
+        if (state.settings.reduceMotion) {el.textContent=formatByType(target,type);return;}
+        const start=performance.now(), durationMs=650;
+        const tick = now => {
+          const p=clamp((now-start)/durationMs,0,1), eased=1-Math.pow(1-p,3);
+          el.textContent=formatByType(target*eased,type);
+          if(p<1) requestAnimationFrame(tick); else el.textContent=formatByType(target,type);
+        };
+        requestAnimationFrame(tick);
+      });
+    }
+    function updateVideoResults() {
+      const root=$("#videoResults"); if(!root)return;
+      root.innerHTML=videoResultsTemplate();
+      if(window.lucide)lucide.createIcons();
+    }
+
+    /* ---------- Charts ---------- */
+    function chartColors() {
+      const css=getComputedStyle(document.documentElement);
+      return {text:css.getPropertyValue("--muted").trim(),grid:state.settings.theme==="dark"?"rgba(255,255,255,.055)":"rgba(20,30,50,.065)",surface:css.getPropertyValue("--surface").trim(),accent:css.getPropertyValue("--accent").trim()};
+    }
+    function baseChartOptions() {
+      const c=chartColors();
+      return {responsive:true,maintainAspectRatio:false,animation:{duration:state.settings.reduceMotion?0:650},interaction:{mode:"index",intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:c.surface,titleColor:c.text,bodyColor:c.text,borderColor:c.grid,borderWidth:1,padding:11,cornerRadius:9,displayColors:true}},scales:{x:{grid:{display:false},ticks:{color:c.text,maxTicksLimit:10,font:{size:10}},border:{display:false}},y:{grid:{color:c.grid},ticks:{color:c.text,font:{size:10},callback:v=>compact(v)},border:{display:false},beginAtZero:true}}};
+    }
+    function makeChart(id,config) {
+      if(!window.Chart)return;
+      const canvas=document.getElementById(id);if(!canvas)return;
+      Chart.defaults.font.family="Inter";
+      state.charts[id]=new Chart(canvas,config);
+    }
+    function gradientDataset(label,data,color,fill=true) {
+      return {label,data,borderColor:color,backgroundColor:context=>{const {ctx,chartArea}=context.chart;if(!chartArea)return color+"18";const g=ctx.createLinearGradient(0,chartArea.top,0,chartArea.bottom);g.addColorStop(0,color+"42");g.addColorStop(1,color+"00");return g},fill,borderWidth:2.2,pointRadius:0,pointHoverRadius:4,pointBackgroundColor:color,tension:.34};
+    }
+    function initCharts() {
+      const d=daily(), c=chartColors();
+      if(state.page==="dashboard"&&d.length){
+        const rows=rangeDaily(), metric=state.dashboardMetric;
+        const values=rows.map(r=>metric==="views"?r.views:metric==="watchHours"?r.estimatedMinutesWatched/60:r.subscribersGained-r.subscribersLost);
+        const color=metric==="views"?c.accent:metric==="watchHours"?"#38bdf8":"#2dd4a0";
+        const options=baseChartOptions();options.plugins.tooltip.callbacks={label:ctx=>`${ctx.dataset.label}: ${metric==="watchHours"?hours(ctx.raw):full(ctx.raw)}`};
+        makeChart("dashboardChart",{type:"line",data:{labels:rows.map(r=>dateFmt(r.date,{month:"short",day:"numeric"})),datasets:[gradientDataset(metric==="views"?"Views":metric==="watchHours"?"Watch hours":"Net subscribers",values,color)]},options});
+      }
+      if(state.page==="growth"&&d.length){
+        const rows=rangeDaily(), weekly=aggregateDaily("week").slice(-16), monthly=aggregateDaily("month"), comparison=monthComparison(), impacts=uploadImpacts();
+        let options=baseChartOptions();
+        makeChart("dailyGrowthChart",{type:"line",data:{labels:rows.map(r=>dateFmt(r.date,{month:"short",day:"numeric"})),datasets:[gradientDataset("Views",rows.map(r=>r.views),c.accent)]},options});
+        options=baseChartOptions();
+        makeChart("subscriberGrowthChart",{type:"line",data:{labels:rows.map(r=>dateFmt(r.date,{month:"short",day:"numeric"})),datasets:[gradientDataset("Net subscribers",rows.map(r=>r.subscribersGained-r.subscribersLost),"#2dd4a0")]},options});
+        options=baseChartOptions();
+        makeChart("weeklyGrowthChart",{type:"bar",data:{labels:weekly.map(r=>dateFmt(r.date,{month:"short",day:"numeric"})),datasets:[{label:"Views",data:weekly.map(r=>r.views),backgroundColor:"#8b5cf680",hoverBackgroundColor:"#8b5cf6",borderRadius:6,borderSkipped:false}]},options});
+        options=baseChartOptions();options.plugins.legend={display:true,labels:{color:c.text,boxWidth:10,font:{size:10}}};
+        makeChart("monthlyGrowthChart",{type:"line",data:{labels:monthly.map(r=>dateFmt(r.date+"-01",{month:"short",year:"2-digit"})),datasets:[gradientDataset("Views",monthly.map(r=>r.views),c.accent,false),gradientDataset("Watch hours",monthly.map(r=>r.estimatedMinutesWatched/60),"#38bdf8",false)]},options});
+        options=baseChartOptions();options.plugins.legend={display:true,labels:{color:c.text,boxWidth:10,font:{size:10}}};
+        makeChart("monthCompareChart",{type:"bar",data:{labels:["Views","Watch hours","Net subscribers"],datasets:[{label:comparison.previousLabel,data:[comparison.previous.views,comparison.previous.watch,comparison.previous.subs],backgroundColor:"#8c96a950",borderRadius:6},{label:comparison.currentLabel,data:[comparison.current.views,comparison.current.watch,comparison.current.subs],backgroundColor:c.accent,borderRadius:6}]},options});
+        if(impacts.length){options=baseChartOptions();options.scales.y.ticks.callback=v=>v+"%";makeChart("uploadImpactChart",{type:"bar",data:{labels:impacts.map(x=>x.video.title.slice(0,15)),datasets:[{label:"View lift",data:impacts.map(x=>x.lift),backgroundColor:impacts.map(x=>x.lift>=0?"#2dd4a099":"#fb718599"),borderRadius:5}]},options});}
+      }
+      if(state.page==="audience"){
+        const a=state.analytics.audience;if(!a)return;
+        let options=baseChartOptions();options.indexAxis="y";options.scales.x.grid={color:c.grid};options.scales.y.grid={display:false};options.scales.x.ticks.callback=v=>v+"%";
+        if(a.ages?.length)makeChart("ageChart",{type:"bar",data:{labels:a.ages.map(x=>x.label),datasets:[{data:a.ages.map(x=>x.value),backgroundColor:["#8b5cf6","#ff4155","#38bdf8","#2dd4a0","#f7b955","#64748b"],borderRadius:6}]},options});
+        const donutOptions={responsive:true,maintainAspectRatio:false,animation:{duration:state.settings.reduceMotion?0:650},plugins:{legend:{position:"bottom",labels:{color:c.text,boxWidth:10,padding:18,font:{size:11}}},tooltip:{backgroundColor:c.surface}}};
+        if(a.gender?.length)makeChart("genderChart",{type:"doughnut",data:{labels:a.gender.map(x=>x.label),datasets:[{data:a.gender.map(x=>x.value),backgroundColor:["#38bdf8","#fb7185","#8b5cf6"],borderWidth:0,hoverOffset:7}]},options:donutOptions});
+        if(a.returning)makeChart("returningChart",{type:"doughnut",data:{labels:["Returning viewers","New viewers"],datasets:[{data:[a.returning.returning,a.returning.new],backgroundColor:[c.accent,"#38bdf8"],borderWidth:0,hoverOffset:7}]},options:donutOptions});
+      }
+      if(state.page==="comparison"){
+        const selected=state.compareIds.map(id=>state.videos.find(v=>v.id===id)).filter(Boolean);
+        if(selected.length<2)return;
+        const metrics=[["views","Views"],["likes","Likes"],["comments","Comments"],["watchHours","Watch time"],["avgViewDuration","Avg duration"],["subscribersGained","Subscribers"],["retention","Retention"]];
+        const colors=[c.accent,"#38bdf8","#8b5cf6","#2dd4a0"];
+        const datasets=selected.map((v,i)=>({label:v.title,data:metrics.map(([key])=>{const max=Math.max(...selected.map(x=>Number(x[key])||0));return max?(Number(v[key])||0)/max*100:0}),borderColor:colors[i],backgroundColor:colors[i]+"22",pointBackgroundColor:colors[i],borderWidth:2,pointRadius:3}));
+        makeChart("comparisonRadar",{type:"radar",data:{labels:metrics.map(x=>x[1]),datasets},options:{responsive:true,maintainAspectRatio:false,animation:{duration:state.settings.reduceMotion?0:650},plugins:{legend:{position:"bottom",labels:{color:c.text,boxWidth:10,font:{size:10},generateLabels:chart=>chart.data.datasets.map((d,i)=>({text:d.label.length>28?d.label.slice(0,28)+"…":d.label,fillStyle:d.borderColor,strokeStyle:d.borderColor,datasetIndex:i}))}}},scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:c.grid},angleLines:{color:c.grid},pointLabels:{color:c.text,font:{size:10}}}}}});
+      }
+      if(state.page==="reports"){
+        const rows=reportRows();if(!rows.length)return;
+        const options=baseChartOptions();options.plugins.legend={display:true,labels:{color:c.text,boxWidth:10,font:{size:10}}};
+        makeChart("reportChart",{type:"line",data:{labels:rows.map(r=>dateFmt(r.date,{month:"short",day:"numeric"})),datasets:[gradientDataset("Views",rows.map(r=>r.views),c.accent),gradientDataset("Net subscribers",rows.map(r=>r.subscribersGained-r.subscribersLost),"#2dd4a0",false)]},options});
+      }
+    }
+
+    /* ---------- Modals, search and notifications ---------- */
+    function openModal(content,className="") {
+      $("#modalRoot").innerHTML=`<div class="modal-backdrop"><div class="modal-panel ${className}" role="dialog" aria-modal="true">${content}</div></div>`;
+      if(window.lucide)lucide.createIcons();
+    }
+    function closeModal() { $("#modalRoot").innerHTML=""; }
+    function modalHead(title,subtitle="",iconName="x") {
+      return `<div class="modal-head"><div class="flex-1"><h2 class="card-title text-[16px]">${esc(title)}</h2>${subtitle?`<p class="section-subtitle">${esc(subtitle)}</p>`:""}</div><button class="icon-btn" data-action="close-modal" aria-label="Close">${icon(iconName)}</button></div>`;
+    }
+    function openConnectModal() {
+      openModal(`${modalHead("Connect YouTube with Google","Secure OAuth 2.0 authorization","x")}
+        <form id="connectForm"><div class="modal-body">
+          <div class="connection-notice">${icon("shield-check")}<span>Only read-only access is requested. Access tokens remain in memory and are never saved to localStorage.</span></div>
+          <label class="field-label" for="modalClientId">Google OAuth 2.0 Web Client ID</label>
+          <input id="modalClientId" class="input mono" required placeholder="xxxxxxxx.apps.googleusercontent.com" value="${esc(state.settings.clientId)}" autocomplete="off">
+          <p class="field-help">Do not enter a client secret or API key. OAuth Client IDs are safe public identifiers.</p>
+          <div class="mt-5 p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+            <div class="small font-semibold mb-3">Google Cloud setup checklist</div>
+            ${["Create an OAuth 2.0 Web application client","Enable YouTube Data API v3 and YouTube Analytics API",`Add ${location.origin} to Authorized JavaScript origins`,"Deploy over HTTPS for production use"].map((t,i)=>`<div class="flex gap-2 tiny muted leading-relaxed py-1"><span class="text-[var(--green)] font-bold">${i+1}.</span><span>${esc(t)}</span></div>`).join("")}
+          </div>
+          <label class="flex items-start gap-3 mt-4 cursor-pointer"><input id="modalMonetary" class="checkbox mt-1" type="checkbox" ${state.settings.requestMonetary?"checked":""}><span><span class="small font-medium">Request monetary read-only access</span><span class="block tiny muted mt-1">Revenue is shown only when the API returns it. No replacement values are generated.</span></span></label>
+        </div><div class="modal-footer"><button type="button" class="btn" data-action="close-modal">Cancel</button><button type="submit" class="btn btn-primary">${icon("chrome")} Continue with Google</button></div></form>`);
+    }
+    function openVideoDetail(id) {
+      const v=state.videos.find(x=>x.id===id);if(!v)return;
+      closeModal();
+      openModal(`${modalHead("Video performance",state.mode==="demo"?"Sample video metrics":"Authorized YouTube metrics","x")}<div class="modal-body">
+        <img src="${esc(v.thumbnail)}" alt="${esc(v.title)}" class="w-full aspect-video object-cover rounded-xl bg-[var(--surface-3)]">
+        <div class="flex items-start justify-between gap-4 mt-5"><div><h3 class="section-title leading-snug">${esc(v.title)}</h3><p class="section-subtitle">Published ${dateFmt(v.publishedAt)} · ${duration(v.duration)} · ${isShort(v)?"Short":"Long-form"}</p></div>${state.mode==="live"?`<a class="btn btn-sm" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener">${icon("external-link")} YouTube</a>`:`<span class="badge badge-demo">SAMPLE</span>`}</div>
+        <div class="four-col mt-5">${[["Views",compact(v.views),"eye"],["Likes",compact(v.likes),"thumbs-up"],["Comments",compact(v.comments),"message-circle"],["Watch time",hours(v.watchHours),"clock"],["Avg. duration",duration(v.avgViewDuration),"timer"],["Retention",pct(v.retention),"scan-eye"],["Subs gained",compact(v.subscribersGained),"user-plus"],["Revenue",money(v.revenue),"circle-dollar-sign"]].map(([l,val,ic])=>`<div class="compare-stat"><div class="flex items-center gap-1 tiny muted">${icon(ic)} ${l}</div><strong class="text-[16px]">${val}</strong></div>`).join("")}</div>
+        <p class="small text-soft leading-relaxed mt-5">${esc(v.description||"No description loaded.")}</p>
+        <div class="connection-notice mt-5">${icon("info")}<span>Unavailable metrics are displayed as “—”. Impressions, CTR and minute-level real-time data are not inferred.</span></div>
+      </div><div class="modal-footer"><button class="btn" data-action="compare-single" data-id="${esc(v.id)}">${icon("columns-3")} Add to comparison</button><button class="btn btn-primary" data-action="close-modal">Done</button></div>`,"wide");
+    }
+    function openSearch() {
+      openModal(`<div class="p-4 border-b border-[var(--border)]"><div class="input-wrap">${icon("search")}<input id="globalSearch" class="input" style="min-height:46px" placeholder="Search pages and videos..." autocomplete="off"></div></div><div class="p-3" id="globalSearchResults">${searchResults("")}</div><div class="px-4 py-3 border-t border-[var(--border)] tiny muted flex justify-between"><span>Navigate with a click</span><span>ESC to close</span></div>`,"search-modal");
+      setTimeout(()=>$("#globalSearch")?.focus(),50);
+    }
+    function searchResults(query) {
+      const q=query.trim().toLowerCase();
+      const pageMatches=menu.filter(m=>!q||m.label.toLowerCase().includes(q)).slice(0,q?4:6);
+      const videoMatches=state.videos.filter(v=>q&&(v.title.toLowerCase().includes(q)||(v.tags||[]).join(" ").toLowerCase().includes(q))).slice(0,6);
+      return `${pageMatches.length?`<div class="nav-label">PAGES</div>${pageMatches.map(m=>`<button class="search-result" data-page="${m.id}">${icon(m.icon)}<div><div class="small font-medium">${m.label}</div><div class="tiny muted mt-1">${m.sub}</div></div></button>`).join("")}`:""}
+      ${videoMatches.length?`<div class="nav-label">VIDEOS</div>${videoMatches.map(v=>`<button class="search-result" data-action="video-detail" data-id="${esc(v.id)}"><img class="thumb thumb-xs" src="${esc(v.thumbnail)}" alt=""><div class="min-w-0"><div class="small truncate-1 font-medium">${esc(v.title)}</div><div class="tiny muted mt-1">${compact(v.views)} views</div></div></button>`).join("")}`:""}
+      ${q&&!pageMatches.length&&!videoMatches.length?`<div class="text-center py-8 muted small">No results found</div>`:""}`;
+    }
+    function openNotifications() {
+      const insights=getLocalInsights();
+      const items=[
+        {icon:state.accessToken?"shield-check":"key-round",title:state.accessToken?"Connection active":state.mode==="demo"?"Sample workspace active":"Reconnect required",body:state.accessToken?`Last synchronized ${timeAgo(state.lastSync)}.`:"Connect Google to retrieve fresh authorized data."},
+        ...insights.slice(0,3).map(x=>({icon:x.icon,title:x.title,body:x.body}))
+      ];
+      openModal(`${modalHead("Notifications","Data-based alerts and workspace status")}<div class="modal-body">${items.map(i=>`<div class="flex gap-3 py-3 border-b border-[var(--border)] last:border-0"><div class="insight-icon">${icon(i.icon)}</div><div><div class="small font-semibold">${esc(i.title)}</div><p class="tiny muted mt-1 leading-relaxed">${esc(i.body)}</p></div></div>`).join("")}</div>`);
+    }
+    function confirmDisconnect(id) {
+      const channel=state.channels.find(c=>c.id===id);if(!channel)return;
+      openModal(`${modalHead("Disconnect channel?","Remove local access and channel metadata")}<div class="modal-body"><div class="flex items-center gap-3"><img class="channel-avatar" style="width:48px;height:48px" src="${esc(channel.avatar)}" alt=""><div><div class="small font-semibold">${esc(channel.name)}</div><div class="tiny mono muted mt-1">${esc(channel.id)}</div></div></div><p class="small muted mt-5 leading-relaxed">This removes the channel from this browser. You can reconnect it later with Google. If it is your last channel, the current OAuth session will also be revoked.</p></div><div class="modal-footer"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-danger" data-action="confirm-disconnect" data-id="${esc(id)}">${icon("unlink")} Disconnect</button></div>`);
+    }
+    function toast(message,type="success") {
+      const el=document.createElement("div");el.className=`toast ${type}`;
+      el.innerHTML=`${icon(type==="error"?"circle-alert":type==="info"?"info":"circle-check")}<div class="small leading-relaxed flex-1">${esc(message)}</div><button class="border-0 bg-transparent muted cursor-pointer" onclick="this.parentElement.remove()">${icon("x")}</button>`;
+      $("#toastContainer").appendChild(el);if(window.lucide)lucide.createIcons();
+      setTimeout(()=>el.remove(),4500);
+    }
+
+    /* ---------- OAuth 2.0 and live YouTube APIs ---------- */
+    function setSyncing(active,message="") {
+      state.syncing=active;
+      const bar=$("#loadingBar"), button=$("#syncButton");
+      bar.className=`loading-bar ${active?"active":"done"}`;
+      if(!active)setTimeout(()=>bar.className="loading-bar",400);
+      if(button){button.disabled=active;button.innerHTML=`${icon("refresh-cw")} <span>${active?(message||"Syncing..."):"Sync data"}</span>`;const svg=$("svg",button);if(svg&&active)svg.classList.add("sync-spinner");if(window.lucide)lucide.createIcons();}
+    }
+    async function requestGoogleToken() {
+      if(!state.settings.clientId){openConnectModal();return false;}
+      if(!window.google?.accounts?.oauth2){toast("Google Identity Services is still loading or blocked. Check your connection and try again.","error");return false;}
+      const scopes=[
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/yt-analytics.readonly"
+      ];
+      if(state.settings.requestMonetary)scopes.push("https://www.googleapis.com/auth/yt-analytics-monetary.readonly");
+      return new Promise((resolve,reject)=>{
+        try{
+          const client=google.accounts.oauth2.initTokenClient({
+            client_id:state.settings.clientId,scope:scopes.join(" "),include_granted_scopes:true,
+            callback:response=>{
+              if(response.error){reject(new Error(response.error_description||response.error));return;}
+              state.accessToken=response.access_token;state.grantedScopes=response.scope||"";resolve(true);
+            },
+            error_callback:error=>reject(new Error(error?.message||"Google authorization was cancelled or blocked"))
+          });
+          client.requestAccessToken({prompt:"consent"});
+        }catch(error){reject(error);}
+      });
+    }
+    async function connectFlow() {
+      if(!state.settings.clientId){openConnectModal();return;}
+      try{
+        setSyncing(true,"Authorizing");
+        await requestGoogleToken();
+        state.mode="live";state.videos=[];state.analytics={daily:[],coreAvailable:false,revenueAvailable:false,audience:null};state.lastSync=null;state.noticeDismissed=false;
+        closeModal();await syncLive();
+      }catch(error){toast(error.message||"Unable to connect Google","error");setSyncing(false);renderPage();}
+    }
+    function apiURL(base,params) {return `${base}?${new URLSearchParams(params).toString()}`;}
+    async function apiFetch(url) {
+      if(!state.accessToken)throw new Error("Reconnect your Google account to continue");
+      if(url.includes("googleapis.com/youtube/v3"))state.quotaUsed+=1;
+      if(url.includes("youtubeanalytics.googleapis.com"))state.analyticsQueries+=1;
+      const response=await fetch(url,{headers:{Authorization:`Bearer ${state.accessToken}`}});
+      const data=await response.json().catch(()=>({}));
+      if(response.status===401){state.accessToken=null;throw new Error("Your Google session expired. Reconnect to continue.");}
+      if(!response.ok)throw new Error(data.error?.message||`YouTube API request failed (${response.status})`);
+      return data;
+    }
+    async function safeAnalytics(params) {
+      try{return await apiFetch(apiURL("https://youtubeanalytics.googleapis.com/v2/reports",params));}
+      catch(error){console.info("Optional analytics report unavailable:",error.message);return null;}
+    }
+    function rowsAsObjects(response) {
+      if(!response?.rows)return[];
+      const headers=(response.columnHeaders||[]).map(h=>h.name);
+      return response.rows.map(row=>Object.fromEntries(headers.map((name,i)=>[name,typeof row[i]==="number"?row[i]:(name==="day"||name==="video"||name==="country"||name==="city"||name==="ageGroup"||name==="gender"?row[i]:Number(row[i]))])));
+    }
+    async function loadLiveChannels() {
+      const data=await apiFetch(apiURL("https://www.googleapis.com/youtube/v3/channels",{part:"snippet,statistics,contentDetails",mine:"true",maxResults:50}));
+      const previous=new Map(state.channels.map(c=>[c.id,c]));
+      state.channels=(data.items||[]).map(item=>({
+        id:item.id,name:item.snippet.title,handle:item.snippet.customUrl||"",
+        avatar:item.snippet.thumbnails?.medium?.url||item.snippet.thumbnails?.default?.url||"",
+        subscribers:num(item.statistics?.subscriberCount),views:num(item.statistics?.viewCount),videoCount:num(item.statistics?.videoCount)||0,
+        publishedAt:item.snippet.publishedAt,uploads:item.contentDetails?.relatedPlaylists?.uploads,
+        lastSync:previous.get(item.id)?.lastSync||null
+      }));
+      if(!state.channels.some(c=>c.id===state.activeChannelId))state.activeChannelId=state.channels[0]?.id||null;
+      saveLiveChannels();
+      if(!state.channels.length)throw new Error("No YouTube channel was found for this Google account");
+    }
+    async function fetchChannelVideos(channel) {
+      if(!channel.uploads)return[];
+      let ids=[],token="",max=Number(state.settings.maxVideos);
+      while(ids.length<max){
+        const data=await apiFetch(apiURL("https://www.googleapis.com/youtube/v3/playlistItems",{part:"snippet,contentDetails",playlistId:channel.uploads,maxResults:Math.min(50,max-ids.length),...(token?{pageToken:token}:{})}));
+        ids.push(...(data.items||[]).map(item=>item.contentDetails?.videoId).filter(Boolean));
+        token=data.nextPageToken||"";if(!token||!data.items?.length)break;
+      }
+      const videos=[];
+      for(let i=0;i<ids.length;i+=50){
+        const chunk=ids.slice(i,i+50);
+        const data=await apiFetch(apiURL("https://www.googleapis.com/youtube/v3/videos",{part:"snippet,statistics,contentDetails,status",id:chunk.join(","),maxResults:50}));
+        videos.push(...(data.items||[]).map(item=>{
+          const seconds=parseISODuration(item.contentDetails?.duration);
+          return {
+            id:item.id,title:item.snippet.title,publishedAt:item.snippet.publishedAt,duration:seconds,isShort:seconds>0&&seconds<=60,
+            views:num(item.statistics?.viewCount)??0,likes:num(item.statistics?.likeCount),comments:num(item.statistics?.commentCount),
+            watchHours:null,avgViewDuration:null,retention:null,subscribersGained:null,revenue:null,recentViews:null,engagedViews:null,last24h:null,
+            thumbnail:item.snippet.thumbnails?.maxres?.url||item.snippet.thumbnails?.high?.url||item.snippet.thumbnails?.medium?.url||"",
+            description:item.snippet.description||"",tags:item.snippet.tags||[],categoryId:item.snippet.categoryId
+          };
+        }));
+      }
+      return videos.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+    }
+    async function videoAnalytics(ids,metrics,startDate,endDate) {
+      const output=[];
+      for(let i=0;i<ids.length;i+=25){
+        const chunk=ids.slice(i,i+25);
+        const response=await apiFetch(apiURL("https://youtubeanalytics.googleapis.com/v2/reports",{
+          ids:`channel==${state.activeChannelId}`,startDate,endDate,metrics,dimensions:"video",filters:`video==${chunk.join(";")}`
+        }));
+        output.push(...rowsAsObjects(response));
+      }
+      return output;
+    }
+    async function fetchAudienceReports(startDate,endDate) {
+      const [countryRes,cityRes,ageRes,genderRes]=await Promise.all([
+        safeAnalytics({ids:`channel==${state.activeChannelId}`,startDate,endDate,metrics:"views",dimensions:"country",sort:"-views",maxResults:12}),
+        safeAnalytics({ids:`channel==${state.activeChannelId}`,startDate,endDate,metrics:"views",dimensions:"city,country",sort:"-views",maxResults:10}),
+        safeAnalytics({ids:`channel==${state.activeChannelId}`,startDate,endDate,metrics:"viewerPercentage",dimensions:"ageGroup"}),
+        safeAnalytics({ids:`channel==${state.activeChannelId}`,startDate,endDate,metrics:"viewerPercentage",dimensions:"gender"})
+      ]);
+      let regionNames=null;try{regionNames=new Intl.DisplayNames(["en"],{type:"region"});}catch{}
+      const countries=rowsAsObjects(countryRes).map(r=>({code:r.country,name:regionNames?.of(r.country)||r.country,views:r.views}));
+      const cities=rowsAsObjects(cityRes).map(r=>({name:r.city,country:r.country,views:r.views}));
+      const ages=rowsAsObjects(ageRes).map(r=>({label:String(r.ageGroup).replace("age","").replace("-","–"),value:r.viewerPercentage})).sort((a,b)=>a.label.localeCompare(b.label));
+      const gender=rowsAsObjects(genderRes).map(r=>({label:String(r.gender).charAt(0).toUpperCase()+String(r.gender).slice(1),value:r.viewerPercentage}));
+      if(!countries.length&&!cities.length&&!ages.length&&!gender.length)return null;
+      return {countries,cities,ages,gender,returning:null,active:null};
+    }
+    async function fetchLiveAnalytics(channel,videos) {
+      const endDate=dateISO(new Date()), startDate=dateISO(new Date(Date.now()-364*DAY));
+      const lifetimeStart=channel.publishedAt?dateISO(channel.publishedAt):"2005-01-01";
+      const recentStart=dateISO(new Date(Date.now()-27*DAY));
+      const ids=videos.map(v=>v.id);
+      const dailyPromise=apiFetch(apiURL("https://youtubeanalytics.googleapis.com/v2/reports",{
+        ids:`channel==${channel.id}`,startDate,endDate,metrics:"views,estimatedMinutesWatched,subscribersGained,subscribersLost",dimensions:"day",sort:"day"
+      }));
+      const perPromise=ids.length?videoAnalytics(ids,"views,estimatedMinutesWatched,averageViewDuration,averageViewPercentage,subscribersGained",lifetimeStart,endDate):Promise.resolve([]);
+      const recentPromise=ids.length?videoAnalytics(ids,"views",recentStart,endDate).catch(()=>null):Promise.resolve(null);
+      const monetaryGranted=state.settings.requestMonetary&&(!state.grantedScopes||state.grantedScopes.includes("yt-analytics-monetary.readonly"));
+      const revenuePromise=monetaryGranted?safeAnalytics({ids:`channel==${channel.id}`,startDate,endDate,metrics:"estimatedRevenue",dimensions:"day",sort:"day"}):Promise.resolve(null);
+      const audiencePromise=fetchAudienceReports(startDate,endDate);
+      const [dailyResult,perResult,recentRows,revenueRes,audience]=await Promise.all([dailyPromise,perPromise,recentPromise,revenuePromise,audiencePromise]);
+      const rows=rowsAsObjects(dailyResult);
+      const revenueRows=rowsAsObjects(revenueRes), revenueMap=new Map(revenueRows.map(r=>[r.day,r.estimatedRevenue]));
+      const dailyRows=rows.map(r=>({date:r.day,views:r.views,estimatedMinutesWatched:r.estimatedMinutesWatched,subscribersGained:r.subscribersGained,subscribersLost:r.subscribersLost,estimatedRevenue:revenueMap.get(r.day)}));
+      const perMap=new Map(perResult.map(r=>[r.video,r])),recentMap=new Map((recentRows||[]).map(r=>[r.video,r.views]));
+      videos.forEach(v=>{
+        const a=perMap.get(v.id);
+        if(a){v.watchHours=a.estimatedMinutesWatched/60;v.avgViewDuration=a.averageViewDuration;v.retention=a.averageViewPercentage;v.subscribersGained=a.subscribersGained;}
+        v.recentViews=recentMap.has(v.id)?recentMap.get(v.id):null;
+      });
+      let revenuePer=null;
+      if(revenueRes&&ids.length){try{revenuePer=await videoAnalytics(ids,"estimatedRevenue",lifetimeStart,endDate);}catch{}}
+      if(revenuePer){const map=new Map(revenuePer.map(r=>[r.video,r.estimatedRevenue]));videos.forEach(v=>v.revenue=map.has(v.id)?map.get(v.id):null);}
+      const shortsIds=videos.filter(isShort).map(v=>v.id);
+      if(shortsIds.length){
+        try{const engaged=await videoAnalytics(shortsIds,"engagedViews",lifetimeStart,endDate);const map=new Map(engaged.map(r=>[r.video,r.engagedViews]));videos.forEach(v=>{if(map.has(v.id))v.engagedViews=map.get(v.id)});}catch{}
+      }
+      return {daily:dailyRows,coreAvailable:true,revenueAvailable:!!revenueRes,perVideoAvailable:true,recentAvailable:!!recentRows,audience};
+    }
+    async function syncLive() {
+      if(!state.accessToken){await connectFlow();return;}
+      if(state.syncing&&$("#loadingBar").classList.contains("active")&&state.lastSync===null&&state.channels.length){/* authorization flow continues */}
+      try{
+        setSyncing(true,"Loading channels");
+        await loadLiveChannels();
+        const channel=currentChannel();if(!channel)throw new Error("Select a channel to synchronize");
+        setSyncing(true,"Loading videos");
+        const videos=await fetchChannelVideos(channel);
+        setSyncing(true,"Loading analytics");
+        let analytics;
+        try{analytics=await fetchLiveAnalytics(channel,videos);}
+        catch(error){
+          console.info("Analytics unavailable:",error.message);
+          analytics={daily:[],coreAvailable:false,revenueAvailable:false,perVideoAvailable:false,recentAvailable:false,audience:null,error:error.message};
+          toast(`Channel and video data loaded. Analytics reports are unavailable: ${error.message}`,"info");
+        }
+        state.mode="live";state.videos=videos;state.analytics=analytics;state.lastSync=new Date().toISOString();channel.lastSync=state.lastSync;
+        state.compareIds=rankVideos("views",videos).slice(0,3).map(v=>v.id);
+        state.aiInsights=[];state.aiNarrative="";state.chat=[];state.report={type:"monthly",start:null,end:null};
+        saveLiveChannels();toast(`Synced ${channel.name}: ${videos.length} videos loaded`);
+      }catch(error){
+        toast(error.message||"Synchronization failed","error");
+        if(!state.channels.length){state.videos=[];state.lastSync=null;}
+      }finally{setSyncing(false);renderChrome();renderPage();}
+    }
+    function revokeSession() {
+      if(state.accessToken&&window.google?.accounts?.oauth2){try{google.accounts.oauth2.revoke(state.accessToken,()=>{});}catch{}}
+      state.accessToken=null;state.grantedScopes="";
+    }
+    function disconnectChannel(id) {
+      if(state.mode==="demo"){state.channels=[];state.activeChannelId=null;state.videos=[];state.analytics={daily:[]};state.lastSync=null;closeModal();renderPage();return;}
+      state.channels=state.channels.filter(c=>c.id!==id);
+      if(state.activeChannelId===id){state.activeChannelId=state.channels[0]?.id||null;state.videos=[];state.analytics={daily:[]};state.lastSync=null;}
+      if(!state.channels.length){revokeSession();localStorage.removeItem("yap_channels");localStorage.removeItem("yap_active_channel");}
+      saveLiveChannels();closeModal();toast("Channel disconnected");renderPage();
+      if(state.accessToken&&state.activeChannelId)syncLive();
+    }
+
+    /* ---------- Exports ---------- */
+    function exportCSV(rows,name) {
+      if(!rows.length)return toast("There is no data to export","error");
+      const headers=Object.keys(rows[0]);
+      const csv=[headers.join(","),...rows.map(row=>headers.map(h=>`"${String(row[h]??"").replace(/"/g,'""')}"`).join(","))].join("\n");
+      downloadBlob("\ufeff"+csv,name,"text/csv;charset=utf-8");toast("CSV export downloaded");
+    }
+    function videoExportRows(videos) {
+      return videos.map(v=>({DataMode:state.mode,VideoID:v.id,Title:v.title,UploadDate:dateISO(v.publishedAt),DurationSeconds:v.duration,Views:v.views,Likes:v.likes,Comments:v.comments,WatchHours:v.watchHours,AverageViewDurationSeconds:v.avgViewDuration,AveragePercentageViewed:v.retention,SubscribersGained:v.subscribersGained,EstimatedRevenueUSD:v.revenue,Recent28DayViews:v.recentViews}));
+    }
+    function exportPDF() {
+      const rows=reportRows();if(!rows.length)return;
+      if(!window.jspdf?.jsPDF)return toast("PDF library is unavailable","error");
+      const doc=new window.jspdf.jsPDF();
+      const channel=currentChannel();
+      doc.setFillColor(15,18,26);doc.rect(0,0,210,32,"F");
+      doc.setTextColor(255,255,255);doc.setFontSize(18);doc.text("YouTube Analytics Pro",14,15);
+      doc.setFontSize(9);doc.setTextColor(190,198,212);doc.text(`${channel?.name||"Channel"} · ${state.mode==="demo"?"SAMPLE DATA":"AUTHORIZED DATA"}`,14,23);
+      doc.setTextColor(30,35,45);doc.setFontSize(12);doc.text(`${state.report.type.toUpperCase()} PERFORMANCE REPORT`,14,44);
+      doc.setFontSize(9);doc.setTextColor(100,108,122);doc.text(`${state.report.start} to ${state.report.end} · Generated ${new Date().toLocaleString()}`,14,51);
+      const body=rows.map(r=>[r.date,full(r.views),(r.estimatedMinutesWatched/60).toFixed(1),full(r.subscribersGained),full(r.subscribersLost),full(r.subscribersGained-r.subscribersLost),state.analytics.revenueAvailable?money(r.estimatedRevenue):"N/A"]);
+      if(doc.autoTable){doc.autoTable({head:[["Date","Views","Watch hours","Subs gained","Subs lost","Net subs","Revenue"]],body,startY:58,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[255,65,85]},alternateRowStyles:{fillColor:[246,247,250]},margin:{left:12,right:12}});}
+      else{body.slice(0,35).forEach((r,i)=>doc.text(r.join("  |  "),14,62+i*7));}
+      doc.setFontSize(8);doc.setTextColor(110,118,130);doc.text("Unavailable API metrics are not estimated. Sample exports are explicitly labeled.",14,287);
+      doc.save(`YouTube-Analytics-${state.report.start}-${state.report.end}.pdf`);toast("PDF report downloaded");
+    }
+    function exportXLSX() {
+      const rows=reportRows();if(!rows.length)return;
+      if(!window.XLSX)return toast("Excel library is unavailable","error");
+      const data=rows.map(r=>({Date:r.date,Views:r.views,WatchHours:Number((r.estimatedMinutesWatched/60).toFixed(2)),SubscribersGained:r.subscribersGained,SubscribersLost:r.subscribersLost,NetSubscribers:r.subscribersGained-r.subscribersLost,EstimatedRevenueUSD:state.analytics.revenueAvailable?r.estimatedRevenue:null}));
+      const sheet=XLSX.utils.json_to_sheet(data),book=XLSX.utils.book_new();
+      sheet["!cols"]=[{wch:14},{wch:14},{wch:14},{wch:18},{wch:16},{wch:16},{wch:22}];
+      XLSX.utils.book_append_sheet(book,sheet,"Analytics Report");
+      const summary=XLSX.utils.json_to_sheet([{Channel:currentChannel()?.name,DataMode:state.mode,StartDate:state.report.start,EndDate:state.report.end,GeneratedAt:new Date().toISOString()}]);
+      XLSX.utils.book_append_sheet(book,summary,"Report Info");
+      XLSX.writeFile(book,`YouTube-Analytics-${state.report.start}-${state.report.end}.xlsx`);toast("Excel report downloaded");
+    }
+
+    /* ---------- UI events ---------- */
+    function closeSidebar() {$("#sidebar").classList.remove("open");$("#sidebarOverlay").classList.remove("open");}
+    document.addEventListener("click",async event=>{
+      const pageButton=event.target.closest("[data-page]");
+      if(pageButton&&!pageButton.dataset.action&&pageButton.dataset.page){setPage(pageButton.dataset.page);return;}
+      const el=event.target.closest("[data-action]");
+      if(event.target.classList.contains("modal-backdrop")){closeModal();return;}
+      if(!el)return;
+      const action=el.dataset.action,value=el.dataset.value,id=el.dataset.id;
+      try{
+        switch(action){
+          case"toggle-sidebar":$("#sidebar").classList.toggle("open");$("#sidebarOverlay").classList.toggle("open");break;
+          case"close-sidebar":closeSidebar();break;
+          case"toggle-theme":state.settings.theme=state.settings.theme==="dark"?"light":"dark";applySettings();saveSettings();renderPage();break;
+          case"set-theme":state.settings.theme=value;applySettings();saveSettings();renderPage();break;
+          case"set-accent":state.settings.accent=value;applySettings();saveSettings();renderPage();break;
+          case"open-search":openSearch();break;
+          case"notifications":openNotifications();break;
+          case"close-modal":closeModal();break;
+          case"dismiss-notice":state.noticeDismissed=true;renderNotice();break;
+          case"connect":await connectFlow();break;
+          case"sync":if(state.mode==="demo")await connectFlow();else await syncLive();break;
+          case"video-detail":openVideoDetail(id);break;
+          case"dashboard-metric":state.dashboardMetric=value;renderPage();break;
+          case"set-range":state.settings.range=Number(value);saveSettings();renderPage();break;
+          case"video-page":state.videoPage=Number(el.dataset.pageNum);updateVideoResults();break;
+          case"best-metric":state.bestMetric=value;renderPage();break;
+          case"best-count":state.bestCount=Number(value);renderPage();break;
+          case"copy-channel":copyText(el.dataset.copy);break;
+          case"activate-channel":state.activeChannelId=id;state.videos=[];state.lastSync=null;saveLiveChannels();renderPage();if(state.mode==="live"&&state.accessToken)await syncLive();break;
+          case"disconnect":confirmDisconnect(id);break;
+          case"confirm-disconnect":disconnectChannel(id);break;
+          case"compare-remove":state.compareIds=state.compareIds.filter(x=>x!==id);renderPage();break;
+          case"compare-add":{const selected=$("#compareSelect")?.value;if(!selected)return toast("Choose a video to add","info");if(state.compareIds.length>=4)return toast("You can compare up to four videos","error");state.compareIds.push(selected);renderPage();break;}
+          case"compare-single":if(!state.compareIds.includes(id)&&state.compareIds.length<4)state.compareIds.push(id);setPage("comparison");break;
+          case"run-ai":await runAIAnalysis();break;
+          case"copy-ai":copyText(state.aiNarrative);break;
+          case"copy-report":copyText(build30DayReport());break;
+          case"ask-preset":await askAI(el.dataset.question);break;
+          case"report-quick":{
+            state.report.type=value;state.report.start=null;state.report.end=null;
+            const d=daily(),end=d.length?d[d.length-1].date:dateISO(new Date());state.report.end=end;
+            const days=value==="daily"?0:value==="weekly"?6:29;
+            state.report.start=value==="custom"?dateISO(new Date(new Date(end+"T12:00:00").getTime()-29*DAY)):dateISO(new Date(new Date(end+"T12:00:00").getTime()-days*DAY));
+            renderPage();break;
+          }
+          case"report-generate":{
+            const start=$("#reportStart").value,end=$("#reportEnd").value;
+            if(!start||!end||start>end)return toast("Choose a valid start and end date","error");
+            state.report={type:"custom",start,end};renderPage();break;
+          }
+          case"export-pdf":exportPDF();break;
+          case"export-xlsx":exportXLSX();break;
+          case"export-videos":exportCSV(videoExportRows(filteredVideos()),"youtube-video-analytics.csv");break;
+          case"export-shorts":exportCSV(videoExportRows(state.videos.filter(isShort)),"youtube-shorts-analytics.csv");break;
+          case"export-comparison":exportCSV(videoExportRows(state.compareIds.map(x=>state.videos.find(v=>v.id===x)).filter(Boolean)),"youtube-video-comparison.csv");break;
+          case"sign-out":revokeSession();state.lastSync=null;state.noticeDismissed=false;toast("OAuth session revoked. Reconnect to synchronize.","info");renderPage();break;
+          case"clear-data":revokeSession();state.channels=[];state.activeChannelId=null;state.videos=[];state.analytics={daily:[]};state.lastSync=null;localStorage.removeItem("yap_channels");localStorage.removeItem("yap_active_channel");state.mode="live";toast("Connected channel data cleared");renderPage();break;
+          case"load-demo":revokeSession();localStorage.removeItem("yap_channels");localStorage.removeItem("yap_active_channel");loadDemo();renderPage();break;
+          case"reset-demo":loadDemo();toast("Sample workspace reset");renderPage();break;
+        }
+      }catch(error){console.error(error);toast(error.message||"Something went wrong","error");}
+    });
+    document.addEventListener("change",async event=>{
+      const target=event.target;
+      if(target.id==="channelSwitcher"){
+        state.activeChannelId=target.value;state.videos=[];state.analytics={daily:[]};state.lastSync=null;saveLiveChannels();renderPage();
+        if(state.mode==="live"&&state.accessToken)await syncLive();
+      }
+      if(target.id==="globalRange"){state.settings.range=Number(target.value);saveSettings();renderPage();}
+      if(target.id==="videoSort"){state.videoSort=target.value;state.videoPage=1;updateVideoResults();}
+      if(target.id==="videoFilter"){state.videoFilter=target.value;state.videoPage=1;updateVideoResults();}
+      if(target.matches("[data-compare-id]")){
+        const id=target.dataset.compareId;
+        if(target.checked){if(state.compareIds.length>=4){target.checked=false;return toast("You can compare up to four videos","error");}if(!state.compareIds.includes(id))state.compareIds.push(id);}
+        else state.compareIds=state.compareIds.filter(x=>x!==id);
+      }
+    });
+    document.addEventListener("input",event=>{
+      if(event.target.id==="videoSearch"){state.videoSearch=event.target.value;state.videoPage=1;updateVideoResults();}
+      if(event.target.id==="globalSearch"){$("#globalSearchResults").innerHTML=searchResults(event.target.value);if(window.lucide)lucide.createIcons();}
+    });
+    document.addEventListener("submit",async event=>{
+      event.preventDefault();
+      if(event.target.id==="connectForm"){
+        const clientId=$("#modalClientId").value.trim();
+        if(!clientId)return;
+        state.settings.clientId=clientId;state.settings.requestMonetary=$("#modalMonetary").checked;saveSettings();closeModal();await connectFlow();
+      }
+      if(event.target.id==="settingsForm"){
+        state.settings.clientId=$("#clientId").value.trim();state.settings.aiProxy=$("#aiProxy").value.trim();
+        state.settings.requestMonetary=$("#requestMonetary").checked;state.settings.maxVideos=Number($("#maxVideos").value);
+        state.settings.range=Number($("#defaultRange").value);state.settings.reduceMotion=$("#reduceMotion").checked;
+        saveSettings();applySettings();toast("Settings saved securely");renderPage();
+      }
+      if(event.target.id==="aiChatForm"){const input=$("#aiQuestion"),q=input.value.trim();if(q)await askAI(q);}
+    });
+    async function askAI(question) {
+      state.chat.push({role:"user",text:question});state.chat.push({role:"assistant",text:"Analyzing loaded metrics..."});renderPage();
+      try{
+        const answer=await callAIProxy(`Answer this creator question using only the supplied analytics. Never invent unavailable values. Question: ${question}`)||localAnswer(question);
+        state.chat[state.chat.length-1].text=answer;
+      }catch(error){state.chat[state.chat.length-1].text=`Secure AI proxy unavailable: ${error.message}\n\nLocal answer:\n${localAnswer(question)}`;}
+      renderPage();
+    }
+    document.addEventListener("keydown",event=>{
+      if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();openSearch();}
+      if(event.key==="Escape"){closeModal();closeSidebar();}
+    });
+    document.addEventListener("error",event=>{
+      if(event.target.tagName==="IMG"&&!event.target.dataset.fallback){
+        event.target.dataset.fallback="1";
+        event.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='100%25' height='100%25' fill='%23171b25'/%3E%3Cpath d='M285 140l90 50-90 50z' fill='%238c96a9'/%3E%3C/svg%3E";
+      }
+    },true);
+
+    /* ---------- Initialization ---------- */
+    const urlClientId=new URLSearchParams(location.search).get("oauth_client_id");
+    if(urlClientId){state.settings.clientId=urlClientId;saveSettings();}
+    const savedChannels=safeJSON(localStorage.getItem("yap_channels"),[])||[];
+    if(savedChannels.length){
+      state.mode="live";state.channels=savedChannels;state.activeChannelId=localStorage.getItem("yap_active_channel")||savedChannels[0].id;
+      state.videos=[];state.analytics={daily:[],coreAvailable:false,revenueAvailable:false,audience:null};state.lastSync=null;
+    }else loadDemo();
+    applySettings();renderPage();
+  </script>
+</body>
+</html>
